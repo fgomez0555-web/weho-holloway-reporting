@@ -299,10 +299,12 @@
       <div class="login-sub">City of West Hollywood · Human Services Division</div>
     </div>
     <div class="login-body">
-      <div class="field-group"><label class="field-label">Email Address</label><input type="email" id="login-email" class="field-input" autocomplete="email" placeholder="name@example.org"></div>
+      <div class="field-group"><label class="field-label">Email Address</label><input type="email" id="login-email" class="field-input" autocomplete="email"></div>
+      <div class="field-group"><label class="field-label">Password</label><input type="password" id="login-password" class="field-input" autocomplete="current-password"></div>
       <p id="login-error" style="color:#C0392B;font-size:12px;margin:0 0 8px;"></p>
-      <button class="login-submit" id="login-submit-btn" onclick="doLogin()">Send Secure Login Link →</button>
-      <div class="login-footer">Enter your approved email address and we’ll send a secure login link.<br>Access is restricted to authorized users only.</div>
+      <button class="login-submit" id="login-submit-btn" onclick="doLogin()">Sign In →</button>
+      <button class="login-submit" id="set-password-btn" onclick="setPasswordFromInvite()" style="display:none;background:#C9A24A;color:#1B2F5B;margin-top:8px;">Set Password →</button>
+      <div class="login-footer">Access restricted to authorized Ascencia staff.<br>Contact your City program monitor for access.</div>
     </div>
   </div>
 </div>
@@ -319,7 +321,7 @@
   </div>
   <div class="topbar-right">
     <span class="badge badge-navy badge-dot" style="font-size:11px;">FY 2025–26</span>
-    <div class="user-pill"><div class="user-avatar">AS</div>Ascencia Staff</div>
+    <div class="user-pill"><div class="user-avatar" id="user-avatar">--</div><span id="user-display-name">Signed in</span></div>
     <button class="logout-btn" onclick="doLogout()">Sign out</button>
   </div>
 </div>
@@ -342,6 +344,11 @@
     <div class="sidebar-label">Program Info</div>
     <div class="sidebar-item"><span class="si-icon">📞</span> City Contact</div>
     <div class="sidebar-item"><span class="si-icon">❓</span> Help &amp; Glossary</div>
+  </div>
+  <div class="sidebar-section" id="admin-sidebar-section" style="display:none;">
+    <div class="sidebar-label">City Admin</div>
+    <div class="sidebar-item" onclick="showAdminAccessPanel()"><span class="si-icon">🔐</span> Access Management</div>
+    <div class="sidebar-item" onclick="showDashboardPanel()"><span class="si-icon">⊞</span> Back to Dashboard</div>
   </div>
 </div>
 
@@ -405,6 +412,78 @@
           <div class="divider" style="margin:14px 0;"></div>
           <p style="color:var(--gray-400);">Questions? Contact your City program monitor in the Human Services Division.</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CITY ADMIN ACCESS MANAGEMENT -->
+  <div class="card" id="admin-access-panel" style="display:none;margin-top:24px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Access Management</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:2px;">Holloway Interim Housing Program only</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="showDashboardPanel()">Back to Dashboard</button>
+    </div>
+    <div class="card-body">
+      <div class="notice navy" style="margin-bottom:18px;">
+        <div class="notice-icon">🔐</div>
+        <div><strong>City Admin Only.</strong> Add approved Holloway users here. New users receive access after they request a magic link from the login screen. Agency users are automatically tied to Holloway.</div>
+      </div>
+      <div class="form-row three">
+        <div class="field-group">
+          <label class="field-label required">Email Address</label>
+          <input type="email" class="field-input" id="admin-new-email" placeholder="name@organization.org">
+        </div>
+        <div class="field-group">
+          <label class="field-label required">Full Name</label>
+          <input class="field-input" id="admin-new-name" placeholder="Full name">
+        </div>
+        <div class="field-group">
+          <label class="field-label required">Organization</label>
+          <input class="field-input" id="admin-new-org" value="Ascencia">
+        </div>
+      </div>
+      <div class="form-row three">
+        <div class="field-group">
+          <label class="field-label required">Access Type</label>
+          <select class="field-select" id="admin-new-access-type">
+            <option value="agency_reporter">Agency Reporter — can enter and submit reports</option>
+            <option value="agency_editor">Agency Editor — can enter/edit draft data</option>
+            <option value="agency_signer">Agency Signer — can review/sign/submit</option>
+            <option value="viewer">Viewer — read-only access</option>
+            <option value="city_admin">City Admin — manage access and review reports</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Program</label>
+          <input class="field-input" value="Holloway Interim Housing Program" readonly>
+        </div>
+        <div class="field-group" style="justify-content:flex-end;">
+          <button class="btn btn-gold" onclick="addApprovedUser()">+ Add / Update User</button>
+        </div>
+      </div>
+      <p id="admin-access-message" style="font-size:12px;margin:4px 0 16px;color:var(--gray-600);"></p>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);">
+        <table class="svc-table" style="width:100%;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Organization</th>
+              <th>Access Type</th>
+              <th>Status</th>
+              <th style="width:120px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="approved-users-table">
+            <tr><td colspan="6">Loading approved users…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.5;">
+        Note: Deactivating a user prevents future access checks, but it does not delete historical records or remove existing Supabase Auth history.
       </div>
     </div>
   </div>
@@ -1452,61 +1531,74 @@ function switchTab(btn, panelId) {
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function ensureMyProfile() {
+async function ensureProfileAfterLogin() {
   const { data: profile, error } = await sb.rpc('ensure_my_profile');
   if (error || !profile) {
-    throw new Error('Login succeeded, but your approved user profile could not be created. Supabase returned: ' + (error?.message || 'No profile returned'));
+    throw new Error(error?.message || 'Login succeeded, but the profile could not be created.');
   }
-  return Array.isArray(profile) ? profile[0] : profile;
+  return profile;
 }
 
 async function loadUserProfile(userId) {
-  let profile;
+  let profile = null;
 
-  // First try to create/update the profile from approved_users via RPC.
-  // This avoids relying on an Auth trigger during magic-link signup.
-  try {
-    profile = await ensureMyProfile();
-  } catch (rpcError) {
-    // If the RPC is not available yet, fall back to reading an existing profile.
-    const { data, error } = await sb
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  const { data: existingProfile, error } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
 
-    if (error || !data) {
-      throw rpcError;
-    }
-    profile = data;
+  if (existingProfile) {
+    profile = existingProfile;
+  } else {
+    profile = await ensureProfileAfterLogin();
   }
 
   window._userProfile = profile;
+  window._currentUserEmail = profile.email || '';
   window._programId = profile.program_id;
 
   if (!window._programId && profile.role === 'city_admin') {
     const { data: program, error: programError } = await sb
       .from('programs')
       .select('id')
-      .limit(1)
+      .eq('name', 'Holloway Interim Housing Program')
       .single();
     if (programError || !program) {
-      throw new Error('No program record was found in the programs table.');
+      throw new Error('No Holloway program record was found in the programs table.');
     }
     window._programId = program.id;
   }
 
   if (!window._programId) {
-    throw new Error('This user profile does not have a program_id. Set program_id for reporter users in Supabase → approved_users/profiles.');
+    throw new Error('This user profile does not have Holloway program access.');
   }
+
+  updateUserDisplay();
+}
+
+function updateUserDisplay() {
+  const profile = window._userProfile || {};
+  const name = profile.full_name || 'Signed in';
+  const roleLabel = formatAccessType(profile.access_type || profile.role || '');
+  const initials = name.split(/\s+/).filter(Boolean).map(x => x[0]).slice(0,2).join('').toUpperCase() || '--';
+  const avatar = document.getElementById('user-avatar');
+  const display = document.getElementById('user-display-name');
+  if (avatar) avatar.textContent = initials;
+  if (display) display.textContent = `${name} · ${roleLabel}`;
+  const adminSection = document.getElementById('admin-sidebar-section');
+  if (adminSection) adminSection.style.display = (profile.role === 'city_admin') ? '' : 'none';
 }
 
 async function enterApp(userId) {
+  const { data: { user } } = await sb.auth.getUser();
+  window._currentUserEmail = user?.email || '';
   await loadUserProfile(userId);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   await loadAllData();
   setQuarter('Q1');
+  if (window._userProfile?.role === 'city_admin') await loadApprovedUsers();
 }
 
 async function doLogin() {
@@ -1516,8 +1608,7 @@ async function doLogin() {
   errorEl.style.color = '#C0392B';
   errorEl.textContent = '';
 
-  const email = emailEl.value.trim().toLowerCase();
-
+  const email = (emailEl.value || '').trim().toLowerCase();
   if (!email) {
     errorEl.textContent = 'Enter your approved email address.';
     return;
@@ -1526,7 +1617,6 @@ async function doLogin() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Checking access…';
 
-  // Confirm the email is on the approved list before asking Supabase to send a link.
   const { data: approvedUser, error: approvedError } = await sb
     .from('approved_users')
     .select('email, active')
@@ -1537,12 +1627,11 @@ async function doLogin() {
   if (approvedError || !approvedUser) {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Send Secure Login Link →';
-    errorEl.textContent = 'This email address is not approved for access.';
+    errorEl.textContent = 'This email address is not approved for Holloway portal access.';
     return;
   }
 
   submitBtn.textContent = 'Sending link…';
-
   const { error } = await sb.auth.signInWithOtp({
     email,
     options: {
@@ -1555,19 +1644,18 @@ async function doLogin() {
   submitBtn.textContent = 'Send Secure Login Link →';
 
   if (error) {
-    errorEl.textContent = error.message || 'This email is not authorized or the login link could not be sent.';
+    errorEl.textContent = error.message;
     return;
   }
 
   errorEl.style.color = '#2D7A4F';
-  errorEl.textContent = 'Check your email for a secure login link. You can close this page after the email arrives.';
+  errorEl.textContent = 'Check your email for a secure login link.';
 }
 
 async function doLogout() {
   await sb.auth.signOut();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login-submit-btn').style.display = '';
 }
 
 async function loadAllData() {
@@ -1805,13 +1893,6 @@ async function submitForm(type) {
   alert('✅ Submitted successfully.');
 }
 
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target?.id === 'login-email') {
-    doLogin();
-  }
-});
-
 document.addEventListener('change', e => {
   if (e.target.type === 'file' && e.target.closest('.upload-zone')) {
     const file = e.target.files[0];
@@ -1821,6 +1902,148 @@ document.addEventListener('change', e => {
     }
   }
 });
+
+
+// ════════════════════════════════════════════════════════════
+// CITY ADMIN — ACCESS MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function formatAccessType(role) {
+  const labels = {
+    city_admin: 'City Admin',
+    agency_reporter: 'Agency Reporter',
+    agency_editor: 'Agency Editor',
+    agency_signer: 'Agency Signer',
+    viewer: 'Viewer',
+    reporter: 'Agency Reporter'
+  };
+  return labels[role] || role || 'User';
+}
+
+function canManageAccess() {
+  return window._userProfile?.role === 'city_admin';
+}
+
+function showAdminAccessPanel() {
+  if (!canManageAccess()) return;
+  document.getElementById('admin-access-panel').style.display = 'block';
+  document.querySelector('.content-grid').style.display = 'none';
+  document.getElementById('kpi-row').style.display = 'none';
+  document.getElementById('main-notice').style.display = 'none';
+  document.querySelector('.quarter-selector').style.display = 'none';
+  document.getElementById('dash-title').textContent = 'Access Management';
+  loadApprovedUsers();
+}
+
+function showDashboardPanel() {
+  document.getElementById('admin-access-panel').style.display = 'none';
+  document.querySelector('.content-grid').style.display = '';
+  document.getElementById('kpi-row').style.display = '';
+  document.getElementById('main-notice').style.display = '';
+  document.querySelector('.quarter-selector').style.display = '';
+  renderDashboard(currentQuarter);
+}
+
+async function loadApprovedUsers() {
+  if (!canManageAccess()) return;
+  const tbody = document.getElementById('approved-users-table');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6">Loading approved users…</td></tr>';
+
+  const { data, error } = await sb
+    .from('approved_users')
+    .select('email, full_name, organization, role, access_type, active, created_at')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);">${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6">No approved users found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(u => `
+    <tr>
+      <td>${escapeHtml(u.full_name || '')}</td>
+      <td>${escapeHtml(u.email || '')}</td>
+      <td>${escapeHtml(u.organization || '')}</td>
+      <td>${escapeHtml(formatAccessType(u.access_type || u.role))}</td>
+      <td>${u.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Inactive</span>'}</td>
+      <td>${u.email === window._currentUserEmail ? 'Current user' : `<button class="btn btn-ghost btn-sm" onclick="toggleApprovedUser('${escapeAttr(u.email)}', ${u.active ? 'false' : 'true'})">${u.active ? 'Deactivate' : 'Reactivate'}</button>`}</td>
+    </tr>
+  `).join('');
+}
+
+async function addApprovedUser() {
+  if (!canManageAccess()) return;
+  const msg = document.getElementById('admin-access-message');
+  msg.style.color = 'var(--gray-600)';
+  msg.textContent = '';
+
+  const email = (document.getElementById('admin-new-email').value || '').trim().toLowerCase();
+  const fullName = (document.getElementById('admin-new-name').value || '').trim();
+  const organization = (document.getElementById('admin-new-org').value || '').trim() || 'Ascencia';
+  const accessType = document.getElementById('admin-new-access-type').value;
+
+  if (!email || !fullName || !accessType) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Enter email, full name, and access type.';
+    return;
+  }
+
+  const role = accessType === 'city_admin' ? 'city_admin' : 'reporter';
+  const programId = role === 'city_admin' ? null : window._programId;
+
+  const { error } = await sb.from('approved_users').upsert({
+    email,
+    full_name: fullName,
+    role,
+    access_type: accessType,
+    organization,
+    active: true,
+    program_id: programId
+  }, { onConflict: 'email' });
+
+  if (error) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = error.message;
+    return;
+  }
+
+  msg.style.color = 'var(--green)';
+  msg.textContent = `${fullName} has been added/updated. They can now request a magic link using ${email}.`;
+  document.getElementById('admin-new-email').value = '';
+  document.getElementById('admin-new-name').value = '';
+  document.getElementById('admin-new-org').value = 'Ascencia';
+  await loadApprovedUsers();
+}
+
+async function toggleApprovedUser(email, active) {
+  if (!canManageAccess()) return;
+  const { error } = await sb
+    .from('approved_users')
+    .update({ active })
+    .eq('email', email);
+  const msg = document.getElementById('admin-access-message');
+  if (error) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = error.message;
+  } else {
+    msg.style.color = 'var(--green)';
+    msg.textContent = active ? 'User reactivated.' : 'User deactivated.';
+    await loadApprovedUsers();
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+function escapeAttr(value) {
+  return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
 
 document.addEventListener('click', e => {
   if (e.target?.id === 'qr-save-btn') saveDraft(currentQuarter);
@@ -1835,11 +2058,16 @@ window.addEventListener('load', async () => {
 
   if (session) {
     try {
+      // Create/update profile after magic-link authentication.
+      await ensureProfileAfterLogin();
       await enterApp(session.user.id);
+      if (window.location.hash) {
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      }
     } catch (err) {
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
-      errorEl.textContent = err.message;
+      if (errorEl) errorEl.textContent = err.message;
     }
   } else {
     document.getElementById('login-screen').style.display = 'flex';
