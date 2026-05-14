@@ -3360,5 +3360,254 @@ function populateQuarterlyForm(q, ro) {
 })();
 </script>
 
+<script>
+(function(){
+  const PORTAL_QS = ['Q1','Q2','Q3','Q4'];
+  const STATUS_LABELS = {
+    accepted:'Accepted', review:'Under Review', pending:'Due / Draft', upcoming:'Upcoming',
+    submitted:'Submitted', resubmitted:'Resubmitted', revision_requested:'Revision Requested', returned:'Returned for Revisions', voided:'Voided', incomplete:'Incomplete', draft:'Draft'
+  };
+  const CUM_FIELDS = ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'];
+
+  function $(id){ return document.getElementById(id); }
+  function qd(q){ return (window.QUARTERS || {})[q]; }
+  function num(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+  function fmt(v){ return (v === null || v === undefined || v === '' || Number.isNaN(v)) ? '—' : v.toLocaleString?.() || String(v); }
+  function statusOf(q){ const b = window._bundlesByQuarter?.[q]; return (b?.city_review_status || b?.bundle_status || qd(q)?.status || 'incomplete').toLowerCase(); }
+  function statusLabel(status){ return STATUS_LABELS[status] || status?.replaceAll('_',' ') || 'Unknown'; }
+  function isAdminUser(){ return window._userProfile?.role === 'city_admin' || window._userProfile?.access_type === 'city_admin'; }
+  function orderedThrough(q){ const i = PORTAL_QS.indexOf(q); return i >= 0 ? PORTAL_QS.slice(0,i+1) : [q]; }
+  function ytdPersons(q){ return orderedThrough(q).reduce((sum,key)=> sum + num(qd(key)?.cover?.personsQuarter), 0); }
+  function ytdScope(q,field){ return orderedThrough(q).reduce((sum,key)=> sum + num(qd(key)?.scope?.[field]), 0); }
+  function bedPct(q){ const s=qd(q)?.scope || {}; return s.bedNightsAvail ? Math.round(num(s.bedNightsOcc)/num(s.bedNightsAvail)*100) : null; }
+
+  function addStyles(){
+    if ($('weho-ui-fix-styles')) return;
+    const st = document.createElement('style'); st.id='weho-ui-fix-styles';
+    st.textContent = `
+      .form-tabs { background: var(--navy) !important; padding: 6px 6px 0 !important; gap: 6px !important; border-bottom: 3px solid var(--gold) !important; }
+      .form-tab { background: rgba(255,255,255,.10) !important; color: rgba(255,255,255,.86) !important; border: 1px solid rgba(255,255,255,.18) !important; border-bottom: none !important; border-radius: 8px 8px 0 0 !important; font-weight: 600 !important; }
+      .form-tab:hover:not(.active) { background: rgba(255,255,255,.18) !important; color: #fff !important; }
+      .form-tab.active { background: var(--white) !important; color: var(--navy) !important; border-color: var(--gold) !important; box-shadow: inset 0 3px 0 var(--gold) !important; }
+      .quarter-focus-card { background: linear-gradient(135deg, #ffffff 0%, #f5f2e9 100%); border: 1px solid var(--border); border-left: 6px solid var(--gold); border-radius: var(--radius-lg); padding: 18px 20px; margin: 0 0 18px; box-shadow: var(--shadow); display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
+      .quarter-focus-title { font-family:'DM Serif Display',serif; font-size:24px; color:var(--navy); line-height:1.1; }
+      .quarter-focus-meta { margin-top:4px; color:var(--gray-600); font-size:13px; }
+      .quarter-focus-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+      .instruction-panel { background:#EEF2FA; border:1px solid #BFD0F0; border-radius:var(--radius-lg); padding:14px 16px; margin:0 0 20px; color:var(--navy); }
+      .instruction-panel strong { color:var(--navy); }
+      .instruction-steps { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:10px; }
+      .instruction-step { background:white; border:1px solid #D7E1F5; border-radius:8px; padding:10px; font-size:12.5px; color:var(--gray-600); }
+      .instruction-step b { display:block; color:var(--navy); font-size:13px; margin-bottom:2px; }
+      .admin-review-panel { margin-top:20px; }
+      .admin-review-table { width:100%; border-collapse:collapse; font-size:13px; }
+      .admin-review-table th { background:var(--navy); color:white; text-align:left; padding:10px; font-weight:600; font-size:12px; }
+      .admin-review-table td { padding:10px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
+      .admin-review-table tr:hover td { background:var(--gray-100); }
+      .status-pill { display:inline-flex; align-items:center; gap:5px; border-radius:18px; padding:3px 9px; font-size:11.5px; font-weight:600; }
+      .status-pill.accepted { background:var(--green-light); color:var(--green); }
+      .status-pill.submitted, .status-pill.resubmitted, .status-pill.review { background:#EEF2FA; color:var(--navy); }
+      .status-pill.revision_requested, .status-pill.returned { background:var(--amber-light); color:var(--amber); }
+      .status-pill.voided { background:var(--red-light); color:var(--red); }
+      .status-pill.pending, .status-pill.incomplete, .status-pill.draft { background:var(--gray-100); color:var(--gray-600); }
+      .kpi-row.loading-fixed .skeleton { display:none !important; }
+      .modal-quarter-strip { background: #F7F6F2; border-bottom:1px solid var(--border); padding:12px 28px; display:flex; justify-content:space-between; gap:12px; align-items:center; color:var(--gray-600); font-size:13px; }
+      .modal-quarter-strip strong { color:var(--navy); }
+      .completion-help { background:var(--amber-light); border:1px solid #F0C96B; color:#7A5200; border-radius:var(--radius); padding:10px 12px; font-size:12.5px; line-height:1.45; margin-bottom:14px; }
+      @media (max-width:900px){ .quarter-focus-card{display:block;} .quarter-focus-actions{justify-content:flex-start;margin-top:12px;} .instruction-steps{grid-template-columns:1fr;} }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function ensureQuarterFocus(q){
+    const selector = document.querySelector('.quarter-selector'); if (!selector) return;
+    let card = $('quarter-focus-card');
+    if (!card) { card = document.createElement('div'); card.id='quarter-focus-card'; card.className='quarter-focus-card'; selector.insertAdjacentElement('afterend', card); }
+    const data = qd(q) || {}; const st = statusOf(q); const pct = bedPct(q);
+    card.innerHTML = `
+      <div>
+        <div class="quarter-focus-title">${q} Reporting Review</div>
+        <div class="quarter-focus-meta"><strong>${data.period || 'Reporting period'}</strong> · Due ${data.due || '—'} · Status: <span class="status-pill ${st}">${statusLabel(st)}</span></div>
+        <div class="quarter-focus-meta">YTD persons served: <strong>${fmt(ytdPersons(q))}</strong> · ${q} occupancy: <strong>${pct===null?'—':pct+'%'}</strong></div>
+      </div>
+      <div class="quarter-focus-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openForm('quarterly')">Open Report</button>
+        <button class="btn btn-ghost btn-sm" onclick="openForm('roster')">Roster</button>
+        <button class="btn btn-ghost btn-sm" onclick="openForm('exits')">Exit Detail</button>
+      </div>`;
+  }
+
+  function ensureInstructionPanel(){
+    const contentGrid = document.querySelector('.content-grid'); if (!contentGrid) return;
+    let panel = $('completion-instructions');
+    if (!panel) { panel = document.createElement('div'); panel.id='completion-instructions'; panel.className='instruction-panel'; contentGrid.insertAdjacentElement('beforebegin', panel); }
+    panel.innerHTML = `<strong>How to complete this quarter:</strong> Complete each component, resolve validation warnings, and submit the quarter as one package when all three requirements are ready.
+      <div class="instruction-steps">
+        <div class="instruction-step"><b>1. Quarterly Report</b>Enter cover sheet, demographics, scope metrics, and narrative.</div>
+        <div class="instruction-step"><b>2. Client Roster</b>Upload HMIS roster and enter summary counts.</div>
+        <div class="instruction-step"><b>3. Exit Detail</b>Confirm non-permanent exits or leave blank if none occurred.</div>
+        <div class="instruction-step"><b>4. Submit / Review</b>Agency submits; City accepts or requests revisions.</div>
+      </div>`;
+  }
+
+  function robustRenderKPIs(q){
+    const row = $('kpi-row'); if (!row) return;
+    row.classList.add('loading-fixed');
+    const data = qd(q) || {}; const s=data.scope || {}; const c=data.cover || {};
+    const occ = bedPct(q); const yPersons = ytdPersons(q) || num(c.personsYTD);
+    const phYtd = ytdScope(q,'phExits'); const phRate = yPersons ? Math.round(phYtd/yPersons*100) : null;
+    row.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Unduplicated Persons (YTD)</div>
+        <div class="kpi-value">${fmt(yPersons)}</div>
+        <div class="kpi-sub">This quarter: ${fmt(c.personsQuarter)}</div>
+        <div class="kpi-trend neutral">YTD is calculated from quarterly new persons served</div>
+      </div>
+      <div class="kpi-card gold-accent">
+        <div class="kpi-label">Occupancy Rate (${q})</div>
+        <div class="kpi-value">${occ===null?'—':occ+'%'}</div>
+        <div class="kpi-sub">${fmt(s.bedNightsOcc)} of ${fmt(s.bedNightsAvail)} bed-nights</div>
+        <div class="kpi-trend ${occ===null?'pending':occ>=90?'up':'down'}">${occ===null?'Pending data':occ>=90?'Above 90% goal':'Below 90% goal'}</div>
+      </div>
+      <div class="kpi-card green-accent">
+        <div class="kpi-label">Permanent Housing Exits (YTD)</div>
+        <div class="kpi-value">${fmt(phYtd)}</div>
+        <div class="kpi-sub">Annual goal: 12</div>
+        <div class="kpi-trend ${phRate>=30?'up':'neutral'}">${phRate===null?'Rate pending':phRate+'% of YTD served'}</div>
+      </div>
+      <div class="kpi-card amber-accent">
+        <div class="kpi-label">Non-Permanent Exits (YTD)</div>
+        <div class="kpi-value">${fmt(ytdScope(q,'exitsTemp') + ytdScope(q,'exitsInstitutional') + ytdScope(q,'exitsHomeless') + ytdScope(q,'exitsUnknown'))}</div>
+        <div class="kpi-sub">Temp: ${fmt(ytdScope(q,'exitsTemp'))} · Homeless: ${fmt(ytdScope(q,'exitsHomeless'))} · Unknown: ${fmt(ytdScope(q,'exitsUnknown'))}</div>
+        <div class="kpi-trend neutral">Use with small-number caution</div>
+      </div>`;
+  }
+
+  function ensureModalQuarterStrip(){
+    document.querySelectorAll('.form-modal').forEach(modal=>{
+      const header = modal.querySelector('.form-modal-header'); if (!header || modal.querySelector('.modal-quarter-strip')) return;
+      const strip = document.createElement('div'); strip.className='modal-quarter-strip'; strip.innerHTML='<span></span><span></span>'; header.insertAdjacentElement('afterend', strip);
+    });
+  }
+  function updateModalQuarterStrip(q){
+    const data=qd(q)||{}; const st=statusOf(q);
+    document.querySelectorAll('.modal-quarter-strip').forEach(strip=>{
+      strip.innerHTML = `<span><strong>${q}</strong> · ${data.period || ''}</span><span class="status-pill ${st}">${statusLabel(st)}</span>`;
+    });
+  }
+  function ensureCompletionHelp(){
+    const cover = $('qr-cover')?.querySelector('.form-body');
+    if (cover && !cover.querySelector('.completion-help')) {
+      const div=document.createElement('div'); div.className='completion-help'; div.innerHTML='<strong>Completion note:</strong> Enter current-quarter counts in the editable fields. YTD values are calculated automatically from accepted prior quarters plus the current quarter.'; cover.prepend(div);
+    }
+  }
+
+  async function refreshBundles(){
+    if (!window._programId || !window.sb) return;
+    const { data } = await sb.from('submission_bundles').select('*').eq('program_id', window._programId).eq('fiscal_year','FY2025-26');
+    window._bundlesByQuarter = {};
+    (data || []).forEach(b=> window._bundlesByQuarter[b.quarter] = b);
+  }
+
+  function ensureAdminSidebar(){
+    const sec = $('admin-sidebar-section'); if (!sec || $('admin-review-nav')) return;
+    const item=document.createElement('div'); item.id='admin-review-nav'; item.className='sidebar-item'; item.innerHTML='<span class="si-icon" aria-hidden="true">📝</span> Review & Acceptance'; item.onclick=()=>showAdminReviewPanel(true); sec.querySelector('.sidebar-label')?.insertAdjacentElement('afterend', item);
+  }
+
+  function ensureAdminReviewPanel(){
+    const main=document.querySelector('.main'); if(!main) return null;
+    let panel=$('admin-review-panel');
+    if(!panel){ panel=document.createElement('div'); panel.id='admin-review-panel'; panel.className='admin-review-panel'; const access=$('access-management-panel'); (access || main.lastElementChild).insertAdjacentElement('beforebegin', panel); }
+    return panel;
+  }
+
+  window.showAdminReviewPanel = function showAdminReviewPanel(scroll=false){
+    if (!isAdminUser()) return alert('Review & Acceptance is only available to City Admin users.');
+    const panel=ensureAdminReviewPanel(); if(!panel) return;
+    panel.style.display='block';
+    renderAdminReviewPanel();
+    if(scroll) panel.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+  window.showAdminReview = window.showAdminReviewPanel;
+
+  function renderAdminReviewPanel(){
+    const panel=ensureAdminReviewPanel(); if(!panel) return;
+    const rows=PORTAL_QS.map(q=>({ q, data:qd(q)||{}, bundle:window._bundlesByQuarter?.[q]||{}, status:statusOf(q) }));
+    panel.innerHTML = `<div class="card">
+      <div class="card-header"><div><div class="card-title">City Admin Review & Acceptance</div><div class="page-subtitle" style="margin-top:2px;">Review Holloway quarterly bundles, accept reports, request revisions, or void a submission for correction.</div></div><button class="btn btn-ghost btn-sm" onclick="renderAdminReviewPanel()">Refresh</button></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <table class="admin-review-table"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revision Count</th><th>City Notes</th><th>Actions</th></tr></thead><tbody>
+          ${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.data.period || '—'}</td><td><span class="status-pill ${r.status}">${statusLabel(r.status)}</span></td><td>${r.bundle.submitted_at ? new Date(r.bundle.submitted_at).toLocaleDateString() : '—'}</td><td>${r.bundle.revision_count || 0}</td><td>${r.bundle.city_review_notes ? String(r.bundle.city_review_notes).slice(0,80) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
+        </tbody></table>
+      </div></div>`;
+  }
+  window.renderAdminReviewPanel = renderAdminReviewPanel;
+
+  window.adminAcceptQuarter = async function adminAcceptQuarter(q){
+    if(!isAdminUser()) return alert('Only City Admin users can accept quarters.');
+    const b=window._bundlesByQuarter?.[q]; if(!b?.id) return alert('Bundle record not found.');
+    const ok=confirm(`Accept ${q}? This will lock the quarter as accepted.`); if(!ok) return;
+    const patch={bundle_status:'accepted', city_review_status:'accepted', accepted_at:new Date().toISOString(), reviewed_at:new Date().toISOString(), reviewed_by:window._userProfile?.id || null};
+    const {error}=await sb.from('submission_bundles').update(patch).eq('id',b.id); if(error) return alert(error.message);
+    try{ await sb.from('bundle_status_log').insert({bundle_id:b.id,status:'accepted',actor_id:window._userProfile?.id || null,note:'Accepted by City Admin.'}); }catch(e){}
+    await loadAllData(); setQuarter(q); showAdminReviewPanel(false);
+  };
+  window.adminRequestRevision = async function adminRequestRevision(q){
+    if(!isAdminUser()) return alert('Only City Admin users can request revisions.');
+    const b=window._bundlesByQuarter?.[q]; if(!b?.id) return alert('Bundle record not found.');
+    const note=prompt(`Enter revision notes for ${q}:`); if(!note) return;
+    const patch={bundle_status:'revision_requested', city_review_status:'revision_requested', city_review_notes:note, returned_at:new Date().toISOString(), reviewed_at:new Date().toISOString(), reviewed_by:window._userProfile?.id || null, revision_count:(b.revision_count||0)+1};
+    const {error}=await sb.from('submission_bundles').update(patch).eq('id',b.id); if(error) return alert(error.message);
+    try{ await sb.from('bundle_status_log').insert({bundle_id:b.id,status:'revision_requested',actor_id:window._userProfile?.id || null,note}); }catch(e){}
+    await loadAllData(); setQuarter(q); showAdminReviewPanel(false);
+  };
+
+  function normalizeQ1Q2Demographics(){
+    const mapEth = (obj)=>{
+      if(!obj) return obj; const out={...obj};
+      if(out['Asian/Pacific Islander'] !== undefined && out['Asian or Asian American'] === undefined){ out['Asian or Asian American']=out['Asian/Pacific Islander']; delete out['Asian/Pacific Islander']; }
+      if(out['American Indian / Alaska Native'] !== undefined && out['American Indian, Alaska Native, or Indigenous'] === undefined){ out['American Indian, Alaska Native, or Indigenous']=out['American Indian / Alaska Native']; delete out['American Indian / Alaska Native']; }
+      return out;
+    };
+    ['Q1','Q2'].forEach(q=>{ if(qd(q)?.cover?.demographics?.ethnicity) qd(q).cover.demographics.ethnicity = mapEth(qd(q).cover.demographics.ethnicity); });
+  }
+
+  function afterQuarterRender(q){
+    normalizeQ1Q2Demographics();
+    ensureQuarterFocus(q); ensureInstructionPanel(); robustRenderKPIs(q); updateModalQuarterStrip(q); ensureCompletionHelp();
+    if(isAdminUser()) { ensureAdminSidebar(); showAdminReviewPanel(false); } else { const p=$('admin-review-panel'); if(p) p.style.display='none'; }
+  }
+
+  const prevLoad = window.loadAllData;
+  if (typeof prevLoad === 'function') {
+    window.loadAllData = async function patchedLoadAllData(){
+      const result = await prevLoad.apply(this, arguments);
+      await refreshBundles(); normalizeQ1Q2Demographics();
+      return result;
+    };
+  }
+
+  const prevSetQuarter = window.setQuarter;
+  if (typeof prevSetQuarter === 'function') {
+    window.setQuarter = function patchedSetQuarter2(q){
+      try { prevSetQuarter.apply(this, arguments); } catch(e) { console.warn('Base setQuarter issue:', e); window.currentQuarter=q; }
+      setTimeout(()=>afterQuarterRender(q), 80);
+    };
+  }
+
+  const prevOpen = window.openForm;
+  if (typeof prevOpen === 'function') {
+    window.openForm = function patchedOpenForm2(type){
+      const result = prevOpen.apply(this, arguments);
+      setTimeout(()=>{ ensureModalQuarterStrip(); updateModalQuarterStrip(window.currentQuarter || 'Q1'); ensureCompletionHelp(); }, 80);
+      return result;
+    };
+  }
+
+  window.addEventListener('load', ()=>{ addStyles(); ensureAdminSidebar(); setTimeout(()=>afterQuarterRender(window.currentQuarter || 'Q1'), 350); });
+  document.addEventListener('DOMContentLoaded', ()=>{ addStyles(); ensureAdminSidebar(); });
+})();
+
+</script>
+
 </body>
 </html>
