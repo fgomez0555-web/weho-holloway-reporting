@@ -335,20 +335,10 @@
     <div class="sidebar-item" onclick="openForm('roster')"><span class="si-icon">👥</span> Client Roster</div>
     <div class="sidebar-item" onclick="openForm('exits')"><span class="si-icon">🚪</span> Non-Permanent Exits</div>
   </div>
-  <div class="sidebar-section">
-    <div class="sidebar-label">Reference</div>
-    <div class="sidebar-item"><span class="si-icon">🎯</span> Annual Goals</div>
-    <div class="sidebar-item"><span class="si-icon">📁</span> Past Submissions</div>
-  </div>
   <div class="sidebar-section" id="admin-sidebar-section" style="display:none;">
     <div class="sidebar-label">City Admin</div>
     <div class="sidebar-item" onclick="showDashboardView()"><span class="si-icon">⊞</span> Dashboard</div>
     <div class="sidebar-item" onclick="showAccessManagement()"><span class="si-icon">🔐</span> Access Management</div>
-  </div>
-  <div class="sidebar-section">
-    <div class="sidebar-label">Program Info</div>
-    <div class="sidebar-item"><span class="si-icon">📞</span> City Contact</div>
-    <div class="sidebar-item"><span class="si-icon">❓</span> Help &amp; Glossary</div>
   </div>
 </div>
 
@@ -1103,8 +1093,8 @@ document.querySelectorAll('.form-overlay').forEach(el => {
 // ════════════════════
 // POPULATE QUARTERLY
 // ════════════════════
-const AGE_ROWS = ['18–24','25–39','40–49','50–61','62–64','65–74','75–84','85+'];
-const ETHNICITY_KEYS = ['Asian/Pacific Islander','Black, African American, or African','Hispanic/Latina/o/e','American Indian / Alaska Native','White','Other (Middle Eastern/North African)','Unknown'];
+const AGE_ROWS = ['Under 18','18–24','25–39','40–49','50–61','62–64','65–74','75–84','85+','Unknown'];
+const ETHNICITY_KEYS = ['Asian or Asian American','Black, African American, or African','Hispanic/Latina/o/e','American Indian, Alaska Native, or Indigenous','White','Other','Unknown'];
 const LANG_KEYS = ['English','Spanish','Russian','Farsi','Other'];
 
 function populateQuarterlyForm(q, ro) {
