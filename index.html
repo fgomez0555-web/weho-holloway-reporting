@@ -1452,15 +1452,33 @@ function switchTab(btn, panelId) {
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function loadUserProfile(userId) {
-  const { data: profile, error } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
+async function ensureMyProfile() {
+  const { data: profile, error } = await sb.rpc('ensure_my_profile');
   if (error || !profile) {
-    throw new Error('Login succeeded, but no profile was found. In Supabase, check Table Editor → profiles and confirm this user has a row.');
+    throw new Error('Login succeeded, but your approved user profile could not be created. Supabase returned: ' + (error?.message || 'No profile returned'));
+  }
+  return Array.isArray(profile) ? profile[0] : profile;
+}
+
+async function loadUserProfile(userId) {
+  let profile;
+
+  // First try to create/update the profile from approved_users via RPC.
+  // This avoids relying on an Auth trigger during magic-link signup.
+  try {
+    profile = await ensureMyProfile();
+  } catch (rpcError) {
+    // If the RPC is not available yet, fall back to reading an existing profile.
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      throw rpcError;
+    }
+    profile = data;
   }
 
   window._userProfile = profile;
@@ -1479,7 +1497,7 @@ async function loadUserProfile(userId) {
   }
 
   if (!window._programId) {
-    throw new Error('This user profile does not have a program_id. Set program_id for reporter users in Supabase → Table Editor → profiles.');
+    throw new Error('This user profile does not have a program_id. Set program_id for reporter users in Supabase → approved_users/profiles.');
   }
 }
 
@@ -1495,7 +1513,6 @@ async function doLogin() {
   const emailEl = document.querySelector('#login-email');
   const errorEl = document.getElementById('login-error');
   const submitBtn = document.getElementById('login-submit-btn');
-
   errorEl.style.color = '#C0392B';
   errorEl.textContent = '';
 
@@ -1509,49 +1526,41 @@ async function doLogin() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Checking access…';
 
-  try {
-    // First confirm the email is on the approved user list.
-    const { data: approvedUser, error: approvedError } = await sb
-      .from('approved_users')
-      .select('email, role, active')
-      .eq('email', email)
-      .eq('active', true)
-      .maybeSingle();
+  // Confirm the email is on the approved list before asking Supabase to send a link.
+  const { data: approvedUser, error: approvedError } = await sb
+    .from('approved_users')
+    .select('email, active')
+    .eq('email', email)
+    .eq('active', true)
+    .maybeSingle();
 
-    if (approvedError) {
-      throw new Error('Unable to verify approved users: ' + approvedError.message);
-    }
-
-    if (!approvedUser) {
-      errorEl.textContent = 'This email address is not approved for access.';
-      return;
-    }
-
-    submitBtn.textContent = 'Sending link…';
-
-    // Send magic link. shouldCreateUser must be true so approved first-time users
-    // can be created in Supabase Auth automatically.
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
-      }
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    errorEl.style.color = '#2D7A4F';
-    errorEl.textContent = 'Check your email for a secure login link. You can close this page after the email arrives.';
-  } catch (err) {
-    errorEl.style.color = '#C0392B';
-    errorEl.textContent = err.message || 'This email is not authorized or the login link could not be sent.';
-  } finally {
+  if (approvedError || !approvedUser) {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Send Secure Login Link →';
+    errorEl.textContent = 'This email address is not approved for access.';
+    return;
   }
+
+  submitBtn.textContent = 'Sending link…';
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
+    }
+  });
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Send Secure Login Link →';
+
+  if (error) {
+    errorEl.textContent = error.message || 'This email is not authorized or the login link could not be sent.';
+    return;
+  }
+
+  errorEl.style.color = '#2D7A4F';
+  errorEl.textContent = 'Check your email for a secure login link. You can close this page after the email arrives.';
 }
 
 async function doLogout() {
