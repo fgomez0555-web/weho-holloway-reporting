@@ -299,12 +299,10 @@
       <div class="login-sub">City of West Hollywood · Human Services Division</div>
     </div>
     <div class="login-body">
-      <div class="field-group"><label class="field-label">Email Address</label><input type="email" id="login-email" class="field-input" autocomplete="email"></div>
-      <div class="field-group"><label class="field-label">Password</label><input type="password" id="login-password" class="field-input" autocomplete="current-password"></div>
+      <div class="field-group"><label class="field-label">Email Address</label><input type="email" id="login-email" class="field-input" autocomplete="email" placeholder="name@example.org"></div>
       <p id="login-error" style="color:#C0392B;font-size:12px;margin:0 0 8px;"></p>
-      <button class="login-submit" id="login-submit-btn" onclick="doLogin()">Sign In →</button>
-      <button class="login-submit" id="set-password-btn" onclick="setPasswordFromInvite()" style="display:none;background:#C9A24A;color:#1B2F5B;margin-top:8px;">Set Password →</button>
-      <div class="login-footer">Access restricted to authorized Ascencia staff.<br>Contact your City program monitor for access.</div>
+      <button class="login-submit" id="login-submit-btn" onclick="doLogin()">Send Secure Login Link →</button>
+      <div class="login-footer">Enter your approved email address and we’ll send a secure login link.<br>Access is restricted to authorized Holloway users only.</div>
     </div>
   </div>
 </div>
@@ -347,8 +345,8 @@
   </div>
   <div class="sidebar-section" id="admin-sidebar-section" style="display:none;">
     <div class="sidebar-label">City Admin</div>
-    <div class="sidebar-item" onclick="showAdminAccessPanel()"><span class="si-icon">🔐</span> Access Management</div>
-    <div class="sidebar-item" onclick="showDashboardPanel()"><span class="si-icon">⊞</span> Back to Dashboard</div>
+    <div class="sidebar-item" onclick="showAdminReview()"><span class="si-icon">✅</span> Review Submissions</div>
+    <div class="sidebar-item" onclick="showAccessManagement && showAccessManagement()"><span class="si-icon">🔐</span> Access Management</div>
   </div>
 </div>
 
@@ -417,73 +415,23 @@
   </div>
 
 
-  <!-- CITY ADMIN ACCESS MANAGEMENT -->
-  <div class="card" id="admin-access-panel" style="display:none;margin-top:24px;">
+
+  <!-- CITY ADMIN REVIEW PANEL -->
+  <div class="card" id="admin-review-panel" style="display:none;margin-top:24px;">
     <div class="card-header">
       <div>
-        <div class="card-title">Access Management</div>
-        <div style="font-size:12px;color:var(--gray-400);margin-top:2px;">Holloway Interim Housing Program only</div>
+        <div class="card-title">City Admin Review</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:2px;">Review submitted Holloway quarterly packages, add City notes, accept, or return for revisions.</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="showDashboardPanel()">Back to Dashboard</button>
+      <button class="btn btn-ghost btn-sm" onclick="renderAdminReview()">Refresh</button>
     </div>
     <div class="card-body">
-      <div class="notice navy" style="margin-bottom:18px;">
-        <div class="notice-icon">🔐</div>
-        <div><strong>City Admin Only.</strong> Add approved Holloway users here. New users receive access after they request a magic link from the login screen. Agency users are automatically tied to Holloway.</div>
+      <div class="notice navy" style="margin-bottom:16px;">
+        <div class="notice-icon">ℹ️</div>
+        <div><strong>Review workflow:</strong> use “Accept Quarter” when all components are complete. Use “Request Revisions” to reopen the quarter for Ascencia edits and leave clear notes.</div>
       </div>
-      <div class="form-row three">
-        <div class="field-group">
-          <label class="field-label required">Email Address</label>
-          <input type="email" class="field-input" id="admin-new-email" placeholder="name@organization.org">
-        </div>
-        <div class="field-group">
-          <label class="field-label required">Full Name</label>
-          <input class="field-input" id="admin-new-name" placeholder="Full name">
-        </div>
-        <div class="field-group">
-          <label class="field-label required">Organization</label>
-          <input class="field-input" id="admin-new-org" value="Ascencia">
-        </div>
-      </div>
-      <div class="form-row three">
-        <div class="field-group">
-          <label class="field-label required">Access Type</label>
-          <select class="field-select" id="admin-new-access-type">
-            <option value="agency_reporter">Agency Reporter — can enter and submit reports</option>
-            <option value="agency_editor">Agency Editor — can enter/edit draft data</option>
-            <option value="agency_signer">Agency Signer — can review/sign/submit</option>
-            <option value="viewer">Viewer — read-only access</option>
-            <option value="city_admin">City Admin — manage access and review reports</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Program</label>
-          <input class="field-input" value="Holloway Interim Housing Program" readonly>
-        </div>
-        <div class="field-group" style="justify-content:flex-end;">
-          <button class="btn btn-gold" onclick="addApprovedUser()">+ Add / Update User</button>
-        </div>
-      </div>
-      <p id="admin-access-message" style="font-size:12px;margin:4px 0 16px;color:var(--gray-600);"></p>
-      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);">
-        <table class="svc-table" style="width:100%;">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Organization</th>
-              <th>Access Type</th>
-              <th>Status</th>
-              <th style="width:120px;">Action</th>
-            </tr>
-          </thead>
-          <tbody id="approved-users-table">
-            <tr><td colspan="6">Loading approved users…</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.5;">
-        Note: Deactivating a user prevents future access checks, but it does not delete historical records or remove existing Supabase Auth history.
+      <div style="overflow-x:auto;">
+        <table class="svc-table" id="admin-review-table"></table>
       </div>
     </div>
   </div>
@@ -1191,6 +1139,8 @@ function populateQuarterlyForm(q, ro) {
   setField('qr-persons-quarter', c.personsQuarter, ro);
   setField('qr-persons-ytd', ytdPersons || c.personsYTD, true);
   setField('qr-persons-total', c.personsTotal, ro);
+  const personsQuarterInput = document.getElementById('qr-persons-quarter');
+  if (personsQuarterInput && !ro) personsQuarterInput.oninput = refreshCoverYTD;
   setField('qr-data-source', c.dataSource, ro);
   setField('qr-signatory', c.signatory, ro);
   setField('qr-sig-date', c.sigDate, ro);
@@ -1224,12 +1174,13 @@ function populateQuarterlyForm(q, ro) {
       if (col === 'label') { cell.className += ' row-label'; cell.textContent = age; }
       else if (col === 'total') { cell.className += ' auto-calc'; cell.textContent = total || '0'; }
       else {
-        if (ro || q === 'Q4' || q === 'Q3') {
+        if (ro || q === 'Q4') {
           cell.className += ' ro'; cell.textContent = row[col] || '0';
         } else {
           const inp = document.createElement('input');
           inp.type = 'number'; inp.min = '0'; inp.value = row[col] || 0;
-          inp.addEventListener('input', updateDemoTotals);
+          inp.dataset.age = age; inp.dataset.gender = col;
+          inp.addEventListener('input', () => { updateDemoTotals(); refreshCoverYTD(); });
           cell.appendChild(inp);
         }
       }
@@ -1261,8 +1212,8 @@ function populateQuarterlyForm(q, ro) {
   ETHNICITY_KEYS.forEach(k => {
     const qVal = c.demographics.ethnicity[k] || 0;
     const ytdVal = (ytdEth[k]||0) + (c.demographics.ethnicity[k]||0);
-    const inputHTML = (ro || q==='Q3'||q==='Q4') ? `<span style="float:right;font-weight:500;">${qVal}</span>`
-      : `<input type="number" style="width:55px;float:right;" value="${qVal}" min="0">`;
+    const inputHTML = (ro || q==='Q4') ? `<span style="float:right;font-weight:500;">${qVal}</span>`
+      : `<input type="number" data-cover-table="ethnicity" data-cover-key="${k}" style="width:55px;float:right;" value="${qVal}" min="0">`;
     etbody.innerHTML += `<tr><td>${k}</td><td>${inputHTML}</td><td><span class="auto-ytd">${ytdVal}</span></td></tr>`;
   });
 
@@ -1277,8 +1228,8 @@ function populateQuarterlyForm(q, ro) {
   LANG_KEYS.forEach(k => {
     const qVal = c.demographics.language[k] || 0;
     const ytdVal = (ytdLang[k]||0) + (c.demographics.language[k]||0);
-    const inputHTML = (ro || q==='Q3'||q==='Q4') ? `<span style="float:right;font-weight:500;">${qVal}</span>`
-      : `<input type="number" style="width:55px;float:right;" value="${qVal}" min="0">`;
+    const inputHTML = (ro || q==='Q4') ? `<span style="float:right;font-weight:500;">${qVal}</span>`
+      : `<input type="number" data-cover-table="language" data-cover-key="${k}" style="width:55px;float:right;" value="${qVal}" min="0">`;
     ltbody.innerHTML += `<tr><td>${k}</td><td>${inputHTML}</td><td><span class="auto-ytd">${ytdVal}</span></td></tr>`;
   });
 
@@ -1315,7 +1266,7 @@ function buildScopeTable(q, s, ro) {
   const ytdQ = (field) => getYTDThrough(q, field);
   const inp = (field, v) => {
     if (ro || q === 'Q4') return `<input type="number" value="${v||''}" readonly style="width:80px;background:var(--gray-100);border:1px solid var(--border);border-radius:3px;padding:4px 8px;font-size:12.5px;font-family:'DM Sans',sans-serif;text-align:right;">`;
-    return `<input type="number" min="0" placeholder="0" value="${v||''}" style="width:80px;border:1px solid var(--border);border-radius:3px;padding:4px 8px;font-size:12.5px;font-family:'DM Sans',sans-serif;text-align:right;">`;
+    return `<input type="number" data-scope-field="${field}" min="0" placeholder="0" value="${v||''}" style="width:80px;border:1px solid var(--border);border-radius:3px;padding:4px 8px;font-size:12.5px;font-family:'DM Sans',sans-serif;text-align:right;">`;
   };
   const ytdCell = (val) => `<span class="auto-ytd">${val !== null && val !== undefined ? val : '—'}</span>`;
   const cat = (label) => `<tr class="cat-header"><td colspan="5">${label}</td></tr>`;
@@ -1354,6 +1305,105 @@ function buildScopeTable(q, s, ro) {
       <tr><td></td><td>Returned to Homelessness</td><td>${inp('exitsHomeless', s.exitsHomeless)}</td><td>${ytdCell(ytdQ('exitsHomeless'))}</td><td></td></tr>
       <tr><td></td><td>Unknown / Left Program</td><td>${inp('exitsUnknown', s.exitsUnknown)}</td><td>${ytdCell(ytdQ('exitsUnknown'))}</td><td></td></tr>
     </tbody>`;
+  attachScopeAutoYTD(q);
+}
+
+
+function priorQuarterSum(q, section, field) {
+  const qs = ['Q1','Q2','Q3','Q4'];
+  let total = 0;
+  for (let i = 0; i < qs.indexOf(q); i++) {
+    total += parseInt(QUARTERS[qs[i]][section]?.[field]) || 0;
+  }
+  return total;
+}
+
+function refreshCoverYTD() {
+  const q = currentQuarter;
+  const qd = QUARTERS[q];
+  if (!qd || qd.status === 'accepted' || qd.status === 'review') return;
+
+  const personsQuarter = parseInt(document.getElementById('qr-persons-quarter')?.value) || 0;
+  const personsYTD = priorQuarterSum(q, 'cover', 'personsQuarter') + personsQuarter;
+  const ytdEl = document.getElementById('qr-persons-ytd');
+  if (ytdEl) ytdEl.value = personsYTD || '';
+
+  // Update in-memory draft values so dashboards/YTD calculations remain consistent while editing.
+  qd.cover.personsQuarter = personsQuarter || null;
+  qd.cover.personsYTD = personsYTD || null;
+
+  AGE_ROWS.forEach(age => {
+    qd.cover.demographics.ageGender[age] = qd.cover.demographics.ageGender[age] || {male:0,female:0,nb:0,unk:0};
+    ['male','female','nb','unk'].forEach(gender => {
+      const input = document.querySelector(`#demo-grid input[data-age="${CSS.escape(age)}"][data-gender="${gender}"]`);
+      if (input) qd.cover.demographics.ageGender[age][gender] = parseInt(input.value) || 0;
+    });
+  });
+
+  document.querySelectorAll('input[data-cover-table="ethnicity"]').forEach(input => {
+    qd.cover.demographics.ethnicity[input.dataset.coverKey] = parseInt(input.value) || 0;
+  });
+  document.querySelectorAll('input[data-cover-table="language"]').forEach(input => {
+    qd.cover.demographics.language[input.dataset.coverKey] = parseInt(input.value) || 0;
+  });
+
+  refreshSimpleYTDTable('ethnicity-table', 'ethnicity', ETHNICITY_KEYS);
+  refreshSimpleYTDTable('language-table', 'language', LANG_KEYS);
+}
+
+function refreshSimpleYTDTable(tbodyId, demoType, keys) {
+  const q = currentQuarter;
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const rows = [...tbody.querySelectorAll('tr')];
+  keys.forEach((key, idx) => {
+    let total = 0;
+    ['Q1','Q2','Q3','Q4'].forEach(qk => {
+      if (['Q1','Q2','Q3','Q4'].indexOf(qk) <= ['Q1','Q2','Q3','Q4'].indexOf(q)) {
+        total += parseInt(QUARTERS[qk].cover.demographics?.[demoType]?.[key]) || 0;
+      }
+    });
+    const ytdSpan = rows[idx]?.querySelector('.auto-ytd');
+    if (ytdSpan) ytdSpan.textContent = total;
+  });
+}
+
+function attachScopeAutoYTD(q) {
+  const inputs = [...document.querySelectorAll('#scope-table input[data-scope-field]')];
+  inputs.forEach(input => input.addEventListener('input', () => refreshScopeYTD(q)));
+  refreshScopeYTD(q);
+}
+
+function refreshScopeYTD(q) {
+  const qd = QUARTERS[q];
+  if (!qd) return;
+  document.querySelectorAll('#scope-table input[data-scope-field]').forEach(input => {
+    const field = input.dataset.scopeField;
+    qd.scope[field] = input.value === '' ? null : (parseInt(input.value) || 0);
+  });
+
+  const ytdMap = {
+    newIntakes: 'New Intakes',
+    bedNightsAvail: 'Bed-nights Available',
+    bedNightsOcc: 'Bed-nights Occupied',
+    phExits: 'Exits to Permanent Housing',
+    incomeIncrease: 'Clients with ↑ Earned Income or New/↑ Benefits',
+    incomeMaintained: 'Clients Who Maintained Income/Benefits',
+    exitsTemp: 'Temporary Housing',
+    exitsInstitutional: 'Institutional Setting',
+    exitsHomeless: 'Returned to Homelessness',
+    exitsUnknown: 'Unknown / Left Program'
+  };
+
+  Object.entries(ytdMap).forEach(([field, label]) => {
+    const row = [...document.querySelectorAll('#scope-table tbody tr')].find(tr => tr.children[1]?.textContent?.trim() === label);
+    const ytdSpan = row?.querySelector('.auto-ytd');
+    if (ytdSpan) ytdSpan.textContent = getYTDThrough(q, field);
+  });
+
+  const undupRow = [...document.querySelectorAll('#scope-table tbody tr')].find(tr => tr.children[1]?.textContent?.trim() === 'Unduplicated Persons Served (YTD)');
+  const undupSpan = undupRow?.querySelectorAll('.auto-ytd')?.[1] || undupRow?.querySelector('.auto-ytd');
+  if (undupSpan) undupSpan.textContent = getYTDThrough(q, 'newIntakes');
 }
 
 function buildReview(q, qd) {
@@ -1531,80 +1581,73 @@ function switchTab(btn, panelId) {
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function ensureProfileAfterLogin() {
-  const { data: profile, error } = await sb.rpc('ensure_my_profile');
-  if (error || !profile) {
-    throw new Error(error?.message || 'Login succeeded, but the profile could not be created.');
-  }
-  return profile;
-}
-
 async function loadUserProfile(userId) {
-  let profile = null;
+  // Create/update the profile from approved_users after magic-link login.
+  // This relies on the ensure_my_profile() RPC created in Supabase.
+  const { error: rpcError } = await sb.rpc('ensure_my_profile');
+  if (rpcError) {
+    // If the profile already exists or the RPC is unavailable, still try to load it so older installs do not break.
+    console.warn('ensure_my_profile warning:', rpcError.message);
+  }
 
-  const { data: existingProfile, error } = await sb
+  const { data: profile, error } = await sb
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .maybeSingle();
+    .single();
 
-  if (existingProfile) {
-    profile = existingProfile;
-  } else {
-    profile = await ensureProfileAfterLogin();
+  if (error || !profile) {
+    throw new Error('Login succeeded, but no profile was found. Check approved_users and the ensure_my_profile() RPC in Supabase.');
   }
 
   window._userProfile = profile;
-  window._currentUserEmail = profile.email || '';
   window._programId = profile.program_id;
 
   if (!window._programId && profile.role === 'city_admin') {
     const { data: program, error: programError } = await sb
       .from('programs')
       .select('id')
-      .eq('name', 'Holloway Interim Housing Program')
+      .limit(1)
       .single();
     if (programError || !program) {
-      throw new Error('No Holloway program record was found in the programs table.');
+      throw new Error('No program record was found in the programs table.');
     }
     window._programId = program.id;
   }
 
   if (!window._programId) {
-    throw new Error('This user profile does not have Holloway program access.');
+    throw new Error('This user profile does not have a program_id. Reporter users must be connected to the Holloway program.');
   }
 
-  updateUserDisplay();
+  updateUserChrome(profile);
 }
 
-function updateUserDisplay() {
-  const profile = window._userProfile || {};
-  const name = profile.full_name || 'Signed in';
-  const roleLabel = formatAccessType(profile.access_type || profile.role || '');
-  const initials = name.split(/\s+/).filter(Boolean).map(x => x[0]).slice(0,2).join('').toUpperCase() || '--';
+function updateUserChrome(profile) {
+  const name = profile?.full_name || 'Signed in';
+  const roleLabel = profile?.role === 'city_admin' ? 'City Admin' : 'Agency Reporter';
+  const initials = name.split(/\s+/).filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase() || '--';
   const avatar = document.getElementById('user-avatar');
   const display = document.getElementById('user-display-name');
   if (avatar) avatar.textContent = initials;
   if (display) display.textContent = `${name} · ${roleLabel}`;
   const adminSection = document.getElementById('admin-sidebar-section');
-  if (adminSection) adminSection.style.display = (profile.role === 'city_admin') ? '' : 'none';
+  if (adminSection) adminSection.style.display = profile?.role === 'city_admin' ? '' : 'none';
 }
 
 async function enterApp(userId) {
-  const { data: { user } } = await sb.auth.getUser();
-  window._currentUserEmail = user?.email || '';
   await loadUserProfile(userId);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   await loadAllData();
   setQuarter('Q1');
-  if (window._userProfile?.role === 'city_admin') await loadApprovedUsers();
+  renderAdminReview();
 }
+
 
 async function doLogin() {
   const emailEl = document.querySelector('#login-email');
   const errorEl = document.getElementById('login-error');
-  const submitBtn = document.getElementById('login-submit-btn');
+  const btn = document.getElementById('login-submit-btn');
   errorEl.style.color = '#C0392B';
   errorEl.textContent = '';
 
@@ -1614,42 +1657,65 @@ async function doLogin() {
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Checking access…';
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
 
-  const { data: approvedUser, error: approvedError } = await sb
-    .from('approved_users')
-    .select('email, active')
-    .eq('email', email)
-    .eq('active', true)
-    .maybeSingle();
+  try {
+    const { data: approvedUser, error: approvedError } = await sb
+      .from('approved_users')
+      .select('email, active')
+      .eq('email', email)
+      .eq('active', true)
+      .single();
 
-  if (approvedError || !approvedUser) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Send Secure Login Link →';
-    errorEl.textContent = 'This email address is not approved for Holloway portal access.';
+    if (approvedError || !approvedUser) {
+      errorEl.textContent = 'This email address is not approved for access.';
+      return;
+    }
+
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
+      }
+    });
+
+    if (error) {
+      errorEl.textContent = error.message || 'This email is not authorized or the login link could not be sent.';
+      return;
+    }
+
+    errorEl.style.color = '#2D7A4F';
+    errorEl.textContent = 'Check your email for a secure login link.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Secure Login Link →';
+  }
+}
+
+async function setPasswordFromInvite() {
+  const passwordEl = document.querySelector('#login-password');
+  const errorEl = document.getElementById('login-error');
+  errorEl.textContent = '';
+
+  const password = passwordEl.value;
+  if (!password || password.length < 8) {
+    errorEl.textContent = 'Enter a new password with at least 8 characters.';
     return;
   }
 
-  submitBtn.textContent = 'Sending link…';
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: true,
-      emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
-    }
-  });
-
-  submitBtn.disabled = false;
-  submitBtn.textContent = 'Send Secure Login Link →';
-
+  const { data, error } = await sb.auth.updateUser({ password });
   if (error) {
     errorEl.textContent = error.message;
     return;
   }
 
-  errorEl.style.color = '#2D7A4F';
-  errorEl.textContent = 'Check your email for a secure login link.';
+  try {
+    await enterApp(data.user.id);
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
 }
 
 async function doLogout() {
@@ -1677,7 +1743,9 @@ async function loadAllData() {
     under_review: 'review',
     draft: 'pending',
     incomplete: 'pending',
-    submitted: 'review'
+    submitted: 'review',
+    revision_requested: 'pending',
+    complete: 'review'
   };
 
   ['Q1','Q2','Q3','Q4'].forEach(q => {
@@ -1686,8 +1754,11 @@ async function loadAllData() {
     const bundle = bundles?.find(b => b.quarter === q);
     const qExits = exits?.filter(e => e.quarter === q) || [];
 
-    const bundleStatus = bundle?.bundle_status || report?.status || 'incomplete';
-    QUARTERS[q].status = statusMap[bundleStatus] || 'upcoming';
+    QUARTERS[q]._bundle = bundle || {};
+    QUARTERS[q]._reportStatus = report?.status || 'missing';
+    QUARTERS[q]._rosterStatus = roster?.status || 'missing';
+    const bundleStatus = bundle?.city_review_status || bundle?.bundle_status || report?.status || 'incomplete';
+    QUARTERS[q].status = statusMap[bundleStatus] || (bundleStatus === 'revision_requested' ? 'pending' : 'upcoming');
 
     if (report) {
       QUARTERS[q].cover = {
@@ -1893,6 +1964,158 @@ async function submitForm(type) {
   alert('✅ Submitted successfully.');
 }
 
+
+
+// ════════════════════
+// CITY ADMIN REVIEW
+// ════════════════════
+function isCityAdmin() {
+  return window._userProfile?.role === 'city_admin';
+}
+
+function getBundleStatus(q) {
+  const b = QUARTERS[q]?._bundle || {};
+  return b.city_review_status || b.bundle_status || QUARTERS[q]?.status || 'incomplete';
+}
+
+function reviewBadge(status) {
+  const s = (status || '').toString();
+  if (s === 'accepted') return '<span class="badge badge-green badge-dot">Accepted</span>';
+  if (s === 'revision_requested') return '<span class="badge badge-amber badge-dot">Revisions Requested</span>';
+  if (s === 'submitted' || s === 'under_review' || s === 'review') return '<span class="badge badge-navy badge-dot">Under Review</span>';
+  if (s === 'complete') return '<span class="badge badge-navy badge-dot">Complete</span>';
+  return '<span class="badge badge-gray">Draft / Incomplete</span>';
+}
+
+function showAdminReview() {
+  if (!isCityAdmin()) return;
+  const panel = document.getElementById('admin-review-panel');
+  if (panel) {
+    panel.style.display = '';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  renderAdminReview();
+}
+
+function renderAdminReview() {
+  const panel = document.getElementById('admin-review-panel');
+  const table = document.getElementById('admin-review-table');
+  if (!panel || !table) return;
+  if (!isCityAdmin()) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  const rows = ['Q1','Q2','Q3','Q4'].map(q => {
+    const qd = QUARTERS[q];
+    const b = qd._bundle || {};
+    const reportStatus = qd._reportStatus || qd.status || 'incomplete';
+    const rosterStatus = qd.roster?.submitted ? (qd._rosterStatus || 'uploaded') : 'missing';
+    const exitsCount = HISTORICAL_EXITS.filter(e => e.qtr === q).length;
+    const notes = b.city_review_notes || '';
+    const submitted = b.submitted_at ? new Date(b.submitted_at).toLocaleDateString() : '—';
+    return `
+      <tr>
+        <td style="vertical-align:top;"><strong style="color:var(--navy);">${q}</strong><br><span style="font-size:11px;color:var(--gray-400);">${qd.period}</span></td>
+        <td style="vertical-align:top;">${reviewBadge(getBundleStatus(q))}<br><span style="font-size:11px;color:var(--gray-400);">Submitted: ${submitted}</span></td>
+        <td style="vertical-align:top;font-size:12px;line-height:1.7;">
+          <div>Quarterly Report: <strong>${reportStatus}</strong></div>
+          <div>Client Roster: <strong>${rosterStatus}</strong></div>
+          <div>Exit Detail: <strong>${exitsCount} row${exitsCount===1?'':'s'}</strong></div>
+        </td>
+        <td style="min-width:220px;vertical-align:top;"><textarea class="field-textarea" id="admin-notes-${q}" style="min-height:70px;" placeholder="City review notes or requested revisions…">${escapeHtml(notes)}</textarea></td>
+        <td style="vertical-align:top;white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="setQuarter('${q}'); openForm('quarterly')">View Report</button><br><br>
+          <button class="btn btn-gold btn-sm" onclick="adminReviewAction('${q}','accept')">Accept Quarter</button><br><br>
+          <button class="btn btn-ghost btn-sm" onclick="adminReviewAction('${q}','revision')">Request Revisions</button><br><br>
+          <button class="btn btn-ghost btn-sm" onclick="adminReviewAction('${q}','save_notes')">Save Notes</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  table.innerHTML = `
+    <thead><tr><th>Quarter</th><th>Review Status</th><th>Components</th><th>City Notes</th><th>Actions</th></tr></thead>
+    <tbody>${rows}</tbody>`;
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function adminReviewAction(q, action) {
+  if (!isCityAdmin()) { alert('City Admin access is required.'); return; }
+  const notes = document.getElementById(`admin-notes-${q}`)?.value || '';
+  const pid = window._programId;
+  const now = new Date().toISOString();
+
+  let bundleUpdate = { city_review_notes: notes };
+  let reportUpdate = {};
+  let rosterUpdate = {};
+  let message = 'Saved.';
+
+  if (action === 'accept') {
+    bundleUpdate = { ...bundleUpdate, bundle_status: 'accepted', city_review_status: 'accepted', accepted_at: now, reviewed_by: window._userProfile?.id, reviewed_at: now };
+    reportUpdate = { status: 'accepted', reviewed_by: window._userProfile?.id, reviewed_at: now };
+    rosterUpdate = { status: 'accepted' };
+    message = `${q} accepted.`;
+  } else if (action === 'revision') {
+    if (!notes.trim()) {
+      alert('Add City review notes before requesting revisions.');
+      return;
+    }
+    bundleUpdate = { ...bundleUpdate, bundle_status: 'incomplete', city_review_status: 'revision_requested', returned_at: now, reviewed_by: window._userProfile?.id, reviewed_at: now };
+    reportUpdate = { status: 'draft' };
+    message = `${q} returned for revisions.`;
+  } else if (action === 'save_notes') {
+    bundleUpdate = { ...bundleUpdate, reviewed_by: window._userProfile?.id, reviewed_at: now };
+    message = 'City review notes saved.';
+  }
+
+  const { error: bundleError } = await sb
+    .from('submission_bundles')
+    .update(bundleUpdate)
+    .eq('program_id', pid)
+    .eq('quarter', q)
+    .eq('fiscal_year', 'FY2025-26');
+
+  if (bundleError) {
+    alert('Review update error: ' + bundleError.message + '\n\nMake sure the admin review SQL patch has been run.');
+    return;
+  }
+
+  if (Object.keys(reportUpdate).length) {
+    const { error: reportError } = await sb
+      .from('quarterly_reports')
+      .update(reportUpdate)
+      .eq('program_id', pid)
+      .eq('quarter', q)
+      .eq('fiscal_year', 'FY2025-26');
+    if (reportError) { alert('Report status update error: ' + reportError.message); return; }
+  }
+
+  if (Object.keys(rosterUpdate).length) {
+    await sb
+      .from('client_rosters')
+      .update(rosterUpdate)
+      .eq('program_id', pid)
+      .eq('quarter', q)
+      .eq('fiscal_year', 'FY2025-26');
+  }
+
+  await loadAllData();
+  renderDashboard(q);
+  renderAdminReview();
+  alert(message);
+}
+
+document.addEventListener('input', e => {
+  if (e.target?.dataset?.coverTable) refreshCoverYTD();
+  if (e.target?.dataset?.scopeField) refreshScopeYTD(currentQuarter);
+});
+
 document.addEventListener('change', e => {
   if (e.target.type === 'file' && e.target.closest('.upload-zone')) {
     const file = e.target.files[0];
@@ -1902,148 +2125,6 @@ document.addEventListener('change', e => {
     }
   }
 });
-
-
-// ════════════════════════════════════════════════════════════
-// CITY ADMIN — ACCESS MANAGEMENT
-// ════════════════════════════════════════════════════════════
-function formatAccessType(role) {
-  const labels = {
-    city_admin: 'City Admin',
-    agency_reporter: 'Agency Reporter',
-    agency_editor: 'Agency Editor',
-    agency_signer: 'Agency Signer',
-    viewer: 'Viewer',
-    reporter: 'Agency Reporter'
-  };
-  return labels[role] || role || 'User';
-}
-
-function canManageAccess() {
-  return window._userProfile?.role === 'city_admin';
-}
-
-function showAdminAccessPanel() {
-  if (!canManageAccess()) return;
-  document.getElementById('admin-access-panel').style.display = 'block';
-  document.querySelector('.content-grid').style.display = 'none';
-  document.getElementById('kpi-row').style.display = 'none';
-  document.getElementById('main-notice').style.display = 'none';
-  document.querySelector('.quarter-selector').style.display = 'none';
-  document.getElementById('dash-title').textContent = 'Access Management';
-  loadApprovedUsers();
-}
-
-function showDashboardPanel() {
-  document.getElementById('admin-access-panel').style.display = 'none';
-  document.querySelector('.content-grid').style.display = '';
-  document.getElementById('kpi-row').style.display = '';
-  document.getElementById('main-notice').style.display = '';
-  document.querySelector('.quarter-selector').style.display = '';
-  renderDashboard(currentQuarter);
-}
-
-async function loadApprovedUsers() {
-  if (!canManageAccess()) return;
-  const tbody = document.getElementById('approved-users-table');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6">Loading approved users…</td></tr>';
-
-  const { data, error } = await sb
-    .from('approved_users')
-    .select('email, full_name, organization, role, access_type, active, created_at')
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);">${escapeHtml(error.message)}</td></tr>`;
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6">No approved users found.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = data.map(u => `
-    <tr>
-      <td>${escapeHtml(u.full_name || '')}</td>
-      <td>${escapeHtml(u.email || '')}</td>
-      <td>${escapeHtml(u.organization || '')}</td>
-      <td>${escapeHtml(formatAccessType(u.access_type || u.role))}</td>
-      <td>${u.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Inactive</span>'}</td>
-      <td>${u.email === window._currentUserEmail ? 'Current user' : `<button class="btn btn-ghost btn-sm" onclick="toggleApprovedUser('${escapeAttr(u.email)}', ${u.active ? 'false' : 'true'})">${u.active ? 'Deactivate' : 'Reactivate'}</button>`}</td>
-    </tr>
-  `).join('');
-}
-
-async function addApprovedUser() {
-  if (!canManageAccess()) return;
-  const msg = document.getElementById('admin-access-message');
-  msg.style.color = 'var(--gray-600)';
-  msg.textContent = '';
-
-  const email = (document.getElementById('admin-new-email').value || '').trim().toLowerCase();
-  const fullName = (document.getElementById('admin-new-name').value || '').trim();
-  const organization = (document.getElementById('admin-new-org').value || '').trim() || 'Ascencia';
-  const accessType = document.getElementById('admin-new-access-type').value;
-
-  if (!email || !fullName || !accessType) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = 'Enter email, full name, and access type.';
-    return;
-  }
-
-  const role = accessType === 'city_admin' ? 'city_admin' : 'reporter';
-  const programId = role === 'city_admin' ? null : window._programId;
-
-  const { error } = await sb.from('approved_users').upsert({
-    email,
-    full_name: fullName,
-    role,
-    access_type: accessType,
-    organization,
-    active: true,
-    program_id: programId
-  }, { onConflict: 'email' });
-
-  if (error) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = error.message;
-    return;
-  }
-
-  msg.style.color = 'var(--green)';
-  msg.textContent = `${fullName} has been added/updated. They can now request a magic link using ${email}.`;
-  document.getElementById('admin-new-email').value = '';
-  document.getElementById('admin-new-name').value = '';
-  document.getElementById('admin-new-org').value = 'Ascencia';
-  await loadApprovedUsers();
-}
-
-async function toggleApprovedUser(email, active) {
-  if (!canManageAccess()) return;
-  const { error } = await sb
-    .from('approved_users')
-    .update({ active })
-    .eq('email', email);
-  const msg = document.getElementById('admin-access-message');
-  if (error) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = error.message;
-  } else {
-    msg.style.color = 'var(--green)';
-    msg.textContent = active ? 'User reactivated.' : 'User deactivated.';
-    await loadApprovedUsers();
-  }
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-}
-
-function escapeAttr(value) {
-  return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-}
 
 document.addEventListener('click', e => {
   if (e.target?.id === 'qr-save-btn') saveDraft(currentQuarter);
@@ -2058,12 +2139,9 @@ window.addEventListener('load', async () => {
 
   if (session) {
     try {
-      // Create/update profile after magic-link authentication.
-      await ensureProfileAfterLogin();
       await enterApp(session.user.id);
-      if (window.location.hash) {
-        history.replaceState(null, document.title, window.location.pathname + window.location.search);
-      }
+      // Clean token fragments from the URL after magic-link login.
+      if (window.location.hash) history.replaceState(null, '', window.location.pathname);
     } catch (err) {
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
@@ -2073,6 +2151,7 @@ window.addEventListener('load', async () => {
     document.getElementById('login-screen').style.display = 'flex';
   }
 });
+
 </script>
 </body>
 </html>
