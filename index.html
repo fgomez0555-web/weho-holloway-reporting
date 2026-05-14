@@ -1495,10 +1495,11 @@ async function doLogin() {
   const emailEl = document.querySelector('#login-email');
   const errorEl = document.getElementById('login-error');
   const submitBtn = document.getElementById('login-submit-btn');
+
   errorEl.style.color = '#C0392B';
   errorEl.textContent = '';
 
-  const email = emailEl.value.trim();
+  const email = emailEl.value.trim().toLowerCase();
 
   if (!email) {
     errorEl.textContent = 'Enter your approved email address.';
@@ -1506,26 +1507,51 @@ async function doLogin() {
   }
 
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Sending link…';
+  submitBtn.textContent = 'Checking access…';
 
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: false,
-      emailRedirectTo: 'https://fgomez0555.github.io/weho-holloway-reporting/'
+  try {
+    // First confirm the email is on the approved user list.
+    const { data: approvedUser, error: approvedError } = await sb
+      .from('approved_users')
+      .select('email, role, active')
+      .eq('email', email)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (approvedError) {
+      throw new Error('Unable to verify approved users: ' + approvedError.message);
     }
-  });
 
-  submitBtn.disabled = false;
-  submitBtn.textContent = 'Send Secure Login Link →';
+    if (!approvedUser) {
+      errorEl.textContent = 'This email address is not approved for access.';
+      return;
+    }
 
-  if (error) {
-    errorEl.textContent = 'This email is not authorized or the login link could not be sent.';
-    return;
+    submitBtn.textContent = 'Sending link…';
+
+    // Send magic link. shouldCreateUser must be true so approved first-time users
+    // can be created in Supabase Auth automatically.
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    errorEl.style.color = '#2D7A4F';
+    errorEl.textContent = 'Check your email for a secure login link. You can close this page after the email arrives.';
+  } catch (err) {
+    errorEl.style.color = '#C0392B';
+    errorEl.textContent = err.message || 'This email is not authorized or the login link could not be sent.';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send Secure Login Link →';
   }
-
-  errorEl.style.color = '#2D7A4F';
-  errorEl.textContent = 'Check your email for a secure login link. You can close this page after the email arrives.';
 }
 
 async function doLogout() {
