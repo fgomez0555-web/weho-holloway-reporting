@@ -3839,5 +3839,222 @@ function populateQuarterlyForm(q, ro) {
 })();
 </script>
 
+
+
+<script>
+/* Robust admin bundle/action patch — ensures review actions always have a bundle row. */
+(function(){
+  const FISCAL_YEAR = window.FISCAL_YEAR || 'FY2025-26';
+  const QUARTERS = ['Q1','Q2','Q3','Q4'];
+  const DUE_DATES = { Q1:'2026-01-15', Q2:'2026-04-15', Q3:'2026-06-15', Q4:'2026-10-15' };
+
+  function isCityAdmin(){ return window._userProfile && window._userProfile.role === 'city_admin'; }
+  function badgeClass(status){
+    return status === 'accepted' ? 'badge-green' :
+      (status === 'submitted' || status === 'resubmitted' || status === 'under_review') ? 'badge-navy' :
+      (status === 'revision_requested' || status === 'returned' || status === 'voided') ? 'badge-red' : 'badge-amber';
+  }
+  function labelStatus(status){
+    const s = String(status || 'incomplete').toLowerCase();
+    return {
+      accepted:'Accepted', submitted:'Submitted', resubmitted:'Resubmitted', under_review:'Under Review',
+      revision_requested:'Revision Requested', returned:'Returned for Revisions', voided:'Voided', incomplete:'Incomplete', draft:'Draft', complete:'Complete'
+    }[s] || s.replace(/_/g,' ');
+  }
+
+  async function ensureProgramId(){
+    if (window._programId) return window._programId;
+    if (!window.sb) throw new Error('Supabase client is not ready.');
+    const { data, error } = await window.sb
+      .from('programs')
+      .select('id')
+      .eq('name','Holloway Interim Housing Program')
+      .single();
+    if (error || !data?.id) throw new Error('Holloway program record was not found.');
+    window._programId = data.id;
+    return data.id;
+  }
+
+  async function ensureBundle(q){
+    if (!QUARTERS.includes(q)) throw new Error('Invalid quarter.');
+    const pid = await ensureProgramId();
+    window._bundlesByQuarter = window._bundlesByQuarter || {};
+    if (window._bundlesByQuarter[q]?.id) return window._bundlesByQuarter[q];
+
+    let { data, error } = await window.sb
+      .from('submission_bundles')
+      .select('*')
+      .eq('program_id', pid)
+      .eq('quarter', q)
+      .eq('fiscal_year', FISCAL_YEAR)
+      .maybeSingle();
+
+    if (error) throw new Error('Could not load bundle: ' + error.message);
+
+    if (!data) {
+      const initialStatus = (q === 'Q1' || q === 'Q2') ? 'accepted' : 'incomplete';
+      const payload = {
+        program_id: pid,
+        quarter: q,
+        fiscal_year: FISCAL_YEAR,
+        due_date: DUE_DATES[q],
+        bundle_status: initialStatus
+      };
+      // Add review status if the column exists; harmlessly retry without it if not.
+      let insert = await window.sb.from('submission_bundles').insert({ ...payload, city_review_status: initialStatus }).select('*').single();
+      if (insert.error && /city_review_status/i.test(insert.error.message || '')) {
+        insert = await window.sb.from('submission_bundles').insert(payload).select('*').single();
+      }
+      if (insert.error) throw new Error('Could not create bundle row: ' + insert.error.message);
+      data = insert.data;
+    }
+
+    window._bundlesByQuarter[q] = data;
+    return data;
+  }
+
+  async function refreshBundleMap(){
+    const pid = await ensureProgramId();
+    const { data, error } = await window.sb
+      .from('submission_bundles')
+      .select('*')
+      .eq('program_id', pid)
+      .eq('fiscal_year', FISCAL_YEAR)
+      .order('quarter');
+    if (error) throw new Error('Could not refresh bundle map: ' + error.message);
+    window._bundlesByQuarter = {};
+    (data || []).forEach(b => { window._bundlesByQuarter[b.quarter] = b; });
+    return window._bundlesByQuarter;
+  }
+
+  async function updateLinkedQuarterTables(q, finalStatus){
+    const pid = await ensureProgramId();
+    const reportStatus = finalStatus === 'accepted' ? 'accepted' : finalStatus === 'revision_requested' ? 'draft' : finalStatus === 'voided' ? 'draft' : 'submitted';
+    await Promise.allSettled([
+      window.sb.from('quarterly_reports').update({ status: reportStatus }).eq('program_id', pid).eq('quarter', q).eq('fiscal_year', FISCAL_YEAR),
+      window.sb.from('client_rosters').update({ status: finalStatus === 'accepted' ? 'accepted' : 'under_review' }).eq('program_id', pid).eq('quarter', q).eq('fiscal_year', FISCAL_YEAR)
+    ]);
+  }
+
+  async function writeBundleLog(bundleId, status, note){
+    try {
+      await window.sb.from('bundle_status_log').insert({
+        bundle_id: bundleId,
+        status,
+        actor_id: window._userProfile?.id || null,
+        note: note || null
+      });
+    } catch(e) { /* optional table may not exist yet */ }
+  }
+
+  window.adminAcceptQuarter = async function adminAcceptQuarter(q){
+    try {
+      if (!isCityAdmin()) return alert('Only City Admin users can accept quarters.');
+      const bundle = await ensureBundle(q);
+      if (!confirm(`Accept ${q}? This will lock the quarter as accepted.`)) return;
+      const patch = {
+        bundle_status: 'accepted',
+        city_review_status: 'accepted',
+        accepted_at: new Date().toISOString(),
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: window._userProfile?.id || null
+      };
+      const { error } = await window.sb.from('submission_bundles').update(patch).eq('id', bundle.id);
+      if (error) throw new Error(error.message);
+      await updateLinkedQuarterTables(q, 'accepted');
+      await writeBundleLog(bundle.id, 'accepted', 'Accepted by City Admin.');
+      await refreshBundleMap();
+      if (window.loadAllData) await window.loadAllData();
+      if (window.setQuarter) window.setQuarter(q);
+      if (window.renderAdminReviewPanel) window.renderAdminReviewPanel();
+      alert(`${q} accepted.`);
+    } catch(err) { alert('Could not accept quarter: ' + err.message); }
+  };
+
+  window.adminRequestRevision = async function adminRequestRevision(q){
+    try {
+      if (!isCityAdmin()) return alert('Only City Admin users can request revisions.');
+      const bundle = await ensureBundle(q);
+      const note = prompt(`Enter revision notes for ${q}:`);
+      if (!note) return;
+      const patch = {
+        bundle_status: 'revision_requested',
+        city_review_status: 'revision_requested',
+        city_review_notes: note,
+        returned_at: new Date().toISOString(),
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: window._userProfile?.id || null,
+        revision_count: (bundle.revision_count || 0) + 1
+      };
+      const { error } = await window.sb.from('submission_bundles').update(patch).eq('id', bundle.id);
+      if (error) throw new Error(error.message);
+      await updateLinkedQuarterTables(q, 'revision_requested');
+      await writeBundleLog(bundle.id, 'revision_requested', note);
+      await refreshBundleMap();
+      if (window.loadAllData) await window.loadAllData();
+      if (window.setQuarter) window.setQuarter(q);
+      if (window.renderAdminReviewPanel) window.renderAdminReviewPanel();
+      alert(`Revision request saved for ${q}.`);
+    } catch(err) { alert('Could not request revisions: ' + err.message); }
+  };
+
+  window.voidSubmission = async function voidSubmission(q){
+    try {
+      if (!isCityAdmin()) return alert('Only City Admin users can void submissions.');
+      const bundle = await ensureBundle(q);
+      const note = prompt(`Reason for voiding ${q}:`);
+      if (!note) return;
+      const patch = {
+        bundle_status: 'voided',
+        city_review_status: 'voided',
+        city_review_notes: note,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: window._userProfile?.id || null
+      };
+      const { error } = await window.sb.from('submission_bundles').update(patch).eq('id', bundle.id);
+      if (error) throw new Error(error.message);
+      await updateLinkedQuarterTables(q, 'voided');
+      await writeBundleLog(bundle.id, 'voided', note);
+      await refreshBundleMap();
+      if (window.loadAllData) await window.loadAllData();
+      if (window.setQuarter) window.setQuarter(q);
+      if (window.renderAdminReviewPanel) window.renderAdminReviewPanel();
+      alert(`${q} submission voided.`);
+    } catch(err) { alert('Could not void submission: ' + err.message); }
+  };
+
+  window.renderAdminReviewPanel = async function renderAdminReviewPanel(){
+    const panel = document.getElementById('admin-review-panel') || document.querySelector('.admin-review-panel');
+    if (!panel || !isCityAdmin()) return;
+    try { await refreshBundleMap(); } catch(e) { panel.innerHTML = `<div class="notice red">${e.message}</div>`; return; }
+    const rows = QUARTERS.map(q => {
+      const b = window._bundlesByQuarter?.[q] || {};
+      const qd = window.QUARTERS?.[q] || {};
+      const status = b.city_review_status || b.bundle_status || qd.status || 'incomplete';
+      return { q, b, qd, status };
+    });
+    panel.innerHTML = `<div class="card">
+      <div class="card-header"><div><div class="card-title">City Admin Review & Acceptance</div><div class="page-subtitle">Review Holloway quarterly bundles. Q1 and Q2 should show as accepted after the status SQL patch is applied.</div></div><button class="btn btn-ghost btn-sm" onclick="renderAdminReviewPanel()">Refresh</button></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <table class="svc-table" style="width:100%;"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revisions</th><th>City Notes</th><th>Actions</th></tr></thead><tbody>
+        ${rows.map(r => `<tr><td><strong>${r.q}</strong></td><td>${r.qd.period || '—'}</td><td><span class="badge ${badgeClass(r.status)}">${labelStatus(r.status)}</span></td><td>${r.b.submitted_at ? new Date(r.b.submitted_at).toLocaleDateString() : '—'}</td><td>${r.b.revision_count || 0}</td><td>${r.b.city_review_notes ? String(r.b.city_review_notes).slice(0,120) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" ${String(r.status).toLowerCase()==='accepted'?'disabled':''} onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" ${String(r.status).toLowerCase()==='accepted'?'disabled':''} onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+  };
+
+  window.addEventListener('load', () => {
+    setTimeout(async () => {
+      try {
+        if (isCityAdmin()) {
+          await refreshBundleMap();
+          if (window.renderAdminReviewPanel) window.renderAdminReviewPanel();
+        }
+      } catch(e) { console.warn('Admin bundle patch init failed:', e.message); }
+    }, 1200);
+  });
+})();
+</script>
+
 </body>
 </html>
