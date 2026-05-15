@@ -3609,5 +3609,235 @@ function populateQuarterlyForm(q, ro) {
 
 </script>
 
+
+
+<!-- Stability patch: status normalization, KPI rendering, and admin acceptance workflow -->
+<script>
+(function(){
+  const FISCAL_YEAR = 'FY2025-26';
+  const QS = ['Q1','Q2','Q3','Q4'];
+  const CUM_FIELDS = ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'];
+
+  function $(id){ return document.getElementById(id); }
+  function n(v){ const x = Number(v); return Number.isFinite(x) ? x : 0; }
+  function fmt(v){ return v === null || v === undefined || v === '' || Number.isNaN(Number(v)) ? '—' : Number(v).toLocaleString(); }
+  function safeQ(q){ return window.QUARTERS && window.QUARTERS[q] ? window.QUARTERS[q] : null; }
+  function statusLabel(st){
+    return ({accepted:'Accepted',review:'Under Review',pending:'Due / In Progress',upcoming:'Upcoming',revision_requested:'Revision Requested',voided:'Voided'})[st] || String(st || 'Pending');
+  }
+  function normalizeStatus(raw, q){
+    raw = String(raw || '').toLowerCase();
+    if (raw === 'accepted') return 'accepted';
+    if (raw === 'submitted' || raw === 'resubmitted' || raw === 'under_review') return 'review';
+    if (raw === 'revision_requested' || raw === 'returned') return 'revision_requested';
+    if (raw === 'voided') return 'voided';
+    if (raw === 'upcoming') return 'upcoming';
+    if (raw === 'draft' || raw === 'incomplete' || raw === 'complete' || raw === 'pending') return 'pending';
+    return q === 'Q4' ? 'upcoming' : 'pending';
+  }
+  function bundleFor(q){ return window._bundlesByQuarter && window._bundlesByQuarter[q] ? window._bundlesByQuarter[q] : null; }
+  function effectiveStatus(q){
+    const b = bundleFor(q);
+    const raw = b?.city_review_status || b?.bundle_status || safeQ(q)?.status;
+    return normalizeStatus(raw, q);
+  }
+  function setLocalStatus(q, st){ if (safeQ(q)) safeQ(q).status = st; }
+  function ytdScope(q, field){
+    let total=0;
+    for (const k of QS) { total += n(safeQ(k)?.scope?.[field]); if (k===q) break; }
+    return total;
+  }
+  function ytdPersons(q){
+    let total=0;
+    for (const k of QS) { total += n(safeQ(k)?.cover?.personsQuarter); if (k===q) break; }
+    return total || n(safeQ(q)?.cover?.personsYTD);
+  }
+  function occupancyFor(q){
+    const s=safeQ(q)?.scope || {}; const avail=n(s.bedNightsAvail), occ=n(s.bedNightsOcc);
+    return avail ? Math.round((occ/avail)*100) : null;
+  }
+
+  async function hydrateBundleMap(){
+    if (!window.sb || !window._programId) return;
+    const {data, error} = await window.sb.from('submission_bundles').select('*').eq('program_id', window._programId).eq('fiscal_year', FISCAL_YEAR);
+    if (error) { console.warn('Unable to load submission bundles:', error.message); return; }
+    window._bundlesByQuarter = {};
+    (data || []).forEach(b => { window._bundlesByQuarter[b.quarter] = b; });
+    QS.forEach(q => setLocalStatus(q, effectiveStatus(q)));
+  }
+
+  // Wrap loadAllData so bundle statuses are always available to dashboard/admin UI.
+  const previousLoadAllData = window.loadAllData;
+  if (typeof previousLoadAllData === 'function') {
+    window.loadAllData = async function patchedLoadAllData(){
+      await previousLoadAllData.apply(this, arguments);
+      await hydrateBundleMap();
+      QS.forEach(q => setLocalStatus(q, effectiveStatus(q)));
+    };
+  }
+
+  // Safe KPI renderer. This replaces previous partial renderers that could leave skeleton cards stuck.
+  window.renderKPIs = function renderKPIsFixed(q){
+    const row = $('kpi-row'); if (!row) return;
+    const data = safeQ(q); if (!data) { row.innerHTML=''; return; }
+    const s = data.scope || {};
+    const yp = ytdPersons(q);
+    const occ = occupancyFor(q);
+    const phYtd = ytdScope(q,'phExits');
+    const phRate = yp ? Math.round((phYtd/yp)*100) : null;
+    const nonPerm = ytdScope(q,'exitsTemp') + ytdScope(q,'exitsInstitutional') + ytdScope(q,'exitsHomeless') + ytdScope(q,'exitsUnknown');
+    row.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Unduplicated Persons (YTD)</div>
+        <div class="kpi-value">${fmt(yp)}</div>
+        <div class="kpi-sub">This quarter: ${fmt(data.cover?.personsQuarter)}</div>
+        <div class="kpi-trend neutral">Contract year through ${q}</div>
+      </div>
+      <div class="kpi-card gold-accent">
+        <div class="kpi-label">Occupancy Rate (${q})</div>
+        <div class="kpi-value">${occ === null ? '—' : occ + '%'}</div>
+        <div class="kpi-sub">${fmt(s.bedNightsOcc)} of ${fmt(s.bedNightsAvail)} bed-nights</div>
+        <div class="kpi-trend ${occ===null?'pending':occ>=90?'up':'down'}">${occ===null?'Pending data':occ>=90?'Above 90% goal':'Below 90% goal'}</div>
+      </div>
+      <div class="kpi-card green-accent">
+        <div class="kpi-label">Permanent Housing Exits (YTD)</div>
+        <div class="kpi-value">${fmt(phYtd)}</div>
+        <div class="kpi-sub">Annual goal: 12</div>
+        <div class="kpi-trend ${phRate!==null && phRate>=30?'up':'neutral'}">${phRate===null?'Rate pending':phRate+'% of YTD served'}</div>
+      </div>
+      <div class="kpi-card amber-accent">
+        <div class="kpi-label">Non-Permanent Exits (YTD)</div>
+        <div class="kpi-value">${fmt(nonPerm)}</div>
+        <div class="kpi-sub">Temp: ${fmt(ytdScope(q,'exitsTemp'))} · Homeless: ${fmt(ytdScope(q,'exitsHomeless'))} · Unknown: ${fmt(ytdScope(q,'exitsUnknown'))}</div>
+        <div class="kpi-trend neutral">Use with small-number caution</div>
+      </div>`;
+  };
+
+  const previousRenderDashboard = window.renderDashboard;
+  window.renderDashboard = function renderDashboardFixed(q){
+    if (safeQ(q)) safeQ(q).status = effectiveStatus(q);
+    if (typeof previousRenderDashboard === 'function') previousRenderDashboard(q);
+    window.renderKPIs(q);
+    renderQuarterContext(q);
+    if (typeof window.renderAdminReviewPanel === 'function') window.renderAdminReviewPanel();
+  };
+
+  function renderQuarterContext(q){
+    const header = document.querySelector('.page-header'); if (!header) return;
+    let card = $('quarter-context-card');
+    if (!card) { card = document.createElement('div'); card.id='quarter-context-card'; card.className='card'; card.style.margin='0 0 20px 0'; header.insertAdjacentElement('afterend', card); }
+    const d=safeQ(q) || {}; const st=effectiveStatus(q); const occ=occupancyFor(q);
+    card.innerHTML = `<div class="card-body" style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;">
+      <div><div class="section-label" style="margin-bottom:4px;">Active Quarter</div><div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);">${q} · ${d.period || ''}</div><div class="page-subtitle">Due: ${d.due || '—'} · Contract Year FY 2025–26</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><span class="badge ${st==='accepted'?'badge-green':st==='review'?'badge-navy':st==='revision_requested'?'badge-red':st==='voided'?'badge-red':'badge-amber'}">${statusLabel(st)}</span><span class="badge badge-gray">YTD persons: ${fmt(ytdPersons(q))}</span><span class="badge badge-gray">Occupancy: ${occ===null?'—':occ+'%'}</span></div>
+    </div>`;
+  }
+
+  function ensureAdminReviewPanel(){
+    const main=document.querySelector('.main'); if(!main) return null;
+    let panel=$('admin-review-panel');
+    if(!panel){ panel=document.createElement('div'); panel.id='admin-review-panel'; panel.className='admin-review-panel'; panel.style.marginTop='24px'; main.appendChild(panel); }
+    return panel;
+  }
+  window.showAdminReviewPanel = function(scroll=false){
+    if (!window._userProfile || window._userProfile.role !== 'city_admin') return alert('Review & Acceptance is only available to City Admin users.');
+    const panel=ensureAdminReviewPanel(); if(!panel) return;
+    panel.style.display='block'; renderAdminReviewPanelFixed(); if(scroll) panel.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+  window.showAdminReview = window.showAdminReviewPanel;
+
+  function ensureAdminNav(){
+    if (!$('admin-review-nav')) {
+      const sidebar = document.querySelector('.sidebar');
+      if (!sidebar) return;
+      let sec = $('admin-sidebar-section');
+      if (!sec) { sec=document.createElement('div'); sec.id='admin-sidebar-section'; sec.className='sidebar-section'; sec.innerHTML='<div class="sidebar-label">City Admin</div>'; sidebar.appendChild(sec); }
+      const item=document.createElement('div'); item.id='admin-review-nav'; item.className='sidebar-item'; item.innerHTML='<span class="si-icon" aria-hidden="true">📝</span> Review & Acceptance'; item.onclick=()=>window.showAdminReviewPanel(true); sec.appendChild(item);
+    }
+  }
+
+  function renderAdminReviewPanelFixed(){
+    const panel=ensureAdminReviewPanel(); if(!panel) return;
+    if (!window._userProfile || window._userProfile.role !== 'city_admin') { panel.style.display='none'; return; }
+    const rows = QS.map(q=>({q, data:safeQ(q)||{}, bundle:bundleFor(q)||{}, st:effectiveStatus(q)}));
+    panel.innerHTML = `<div class="card">
+      <div class="card-header"><div><div class="card-title">City Admin Review & Acceptance</div><div class="page-subtitle">Review Holloway quarterly bundles. Accepted quarters are locked; submitted/resubmitted quarters can be accepted or returned for revisions.</div></div><button class="btn btn-ghost btn-sm" onclick="showAdminReviewPanel(false)">Refresh</button></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <table class="svc-table" style="width:100%;"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revisions</th><th>City Notes</th><th>Actions</th></tr></thead><tbody>
+          ${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.data.period || '—'}</td><td><span class="badge ${r.st==='accepted'?'badge-green':r.st==='review'?'badge-navy':r.st==='revision_requested'?'badge-red':'badge-amber'}">${statusLabel(r.st)}</span></td><td>${r.bundle.submitted_at ? new Date(r.bundle.submitted_at).toLocaleDateString() : '—'}</td><td>${r.bundle.revision_count || 0}</td><td>${r.bundle.city_review_notes ? String(r.bundle.city_review_notes).slice(0,100) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" ${r.st==='accepted'?'disabled':''} onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" ${r.st==='accepted'?'disabled':''} onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
+        </tbody></table>
+      </div></div>`;
+  }
+  window.renderAdminReviewPanel = renderAdminReviewPanelFixed;
+
+  async function updateQuarterTables(q, status){
+    const reportStatus = status === 'accepted' ? 'accepted' : status === 'revision_requested' ? 'draft' : status === 'voided' ? 'draft' : 'submitted';
+    await Promise.allSettled([
+      window.sb.from('quarterly_reports').update({status: reportStatus}).eq('program_id', window._programId).eq('quarter', q).eq('fiscal_year', FISCAL_YEAR),
+      window.sb.from('client_rosters').update({status: status === 'accepted' ? 'accepted' : 'under_review'}).eq('program_id', window._programId).eq('quarter', q).eq('fiscal_year', FISCAL_YEAR)
+    ]);
+  }
+
+  window.adminAcceptQuarter = async function(q){
+    if (!window._userProfile || window._userProfile.role !== 'city_admin') return alert('Only City Admin users can accept quarters.');
+    let b = bundleFor(q); if(!b?.id){ await hydrateBundleMap(); b=bundleFor(q); }
+    if(!b?.id) return alert('Bundle record not found. Refresh the page and try again.');
+    if(!confirm(`Accept ${q}? This will lock the quarter as accepted.`)) return;
+    const patch={bundle_status:'accepted', city_review_status:'accepted', accepted_at:new Date().toISOString(), reviewed_at:new Date().toISOString(), reviewed_by:window._userProfile.id, city_review_notes:b.city_review_notes || null};
+    const {error}=await window.sb.from('submission_bundles').update(patch).eq('id',b.id);
+    if(error) return alert('Could not accept quarter: ' + error.message);
+    await updateQuarterTables(q, 'accepted');
+    try{ await window.sb.from('bundle_status_log').insert({bundle_id:b.id,status:'accepted',actor_id:window._userProfile.id,note:'Accepted by City Admin.'}); }catch(e){}
+    await window.loadAllData(); window.setQuarter(q); window.showAdminReviewPanel(false);
+  };
+
+  window.adminRequestRevision = async function(q){
+    if (!window._userProfile || window._userProfile.role !== 'city_admin') return alert('Only City Admin users can request revisions.');
+    let b = bundleFor(q); if(!b?.id){ await hydrateBundleMap(); b=bundleFor(q); }
+    if(!b?.id) return alert('Bundle record not found. Refresh the page and try again.');
+    const note=prompt(`Enter revision notes for ${q}:`); if(!note) return;
+    const patch={bundle_status:'revision_requested', city_review_status:'revision_requested', city_review_notes:note, returned_at:new Date().toISOString(), reviewed_at:new Date().toISOString(), reviewed_by:window._userProfile.id, revision_count:(b.revision_count||0)+1};
+    const {error}=await window.sb.from('submission_bundles').update(patch).eq('id',b.id);
+    if(error) return alert('Could not request revisions: ' + error.message);
+    await updateQuarterTables(q, 'revision_requested');
+    try{ await window.sb.from('bundle_status_log').insert({bundle_id:b.id,status:'revision_requested',actor_id:window._userProfile.id,note}); }catch(e){}
+    await window.loadAllData(); window.setQuarter(q); window.showAdminReviewPanel(false);
+  };
+
+  window.voidSubmission = async function(q){
+    if (!window._userProfile || window._userProfile.role !== 'city_admin') return alert('Only City Admin users can void submissions.');
+    let b = bundleFor(q); if(!b?.id){ await hydrateBundleMap(); b=bundleFor(q); }
+    if(!b?.id) return alert('Bundle record not found. Refresh the page and try again.');
+    const note=prompt(`Reason for voiding ${q}:`); if(!note) return;
+    const patch={bundle_status:'voided', city_review_status:'voided', city_review_notes:note, reviewed_at:new Date().toISOString(), reviewed_by:window._userProfile.id};
+    const {error}=await window.sb.from('submission_bundles').update(patch).eq('id',b.id);
+    if(error) return alert('Could not void submission: ' + error.message);
+    try{ await window.sb.from('bundle_status_log').insert({bundle_id:b.id,status:'voided',actor_id:window._userProfile.id,note}); }catch(e){}
+    await window.loadAllData(); window.setQuarter(q); window.showAdminReviewPanel(false);
+  };
+
+  const previousSetQuarter = window.setQuarter;
+  window.setQuarter = function setQuarterFixed(q){
+    if (safeQ(q)) safeQ(q).status = effectiveStatus(q);
+    if (typeof previousSetQuarter === 'function') previousSetQuarter(q);
+    window.renderKPIs(q);
+    renderQuarterContext(q);
+    if (window._userProfile?.role === 'city_admin') { ensureAdminNav(); window.showAdminReviewPanel(false); }
+  };
+
+  window.addEventListener('load', () => {
+    setTimeout(async ()=>{
+      if (window._userProfile?.role === 'city_admin') ensureAdminNav();
+      await hydrateBundleMap();
+      const q = window.currentQuarter || 'Q1';
+      if (window.QUARTERS) QS.forEach(k=>setLocalStatus(k, effectiveStatus(k)));
+      if ($('kpi-row')) window.renderKPIs(q);
+      renderQuarterContext(q);
+      if (window._userProfile?.role === 'city_admin') window.showAdminReviewPanel(false);
+    }, 800);
+  });
+})();
+</script>
+
 </body>
 </html>
