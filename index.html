@@ -1090,7 +1090,7 @@ const App = {
     return html + `</div><p class="field-hint" style="margin-top:8px;">Quarter demographics must equal Persons Served This Quarter. YTD demographics are calculated and read-only.</p>`;
   },
 
-  renderSimpleDemoTable  renderSimpleDemoTable(prefix, keys, values, q) {
+  renderSimpleDemoTable(prefix, keys, values, q) {
     let qTotal = 0;
     let yTotal = 0;
     const rows = keys.map(k => {
@@ -1106,7 +1106,7 @@ const App = {
       </tbody></table></div>`;
   },
 
-  renderScopeForm  renderScopeForm(q) {
+  renderScopeForm(q) {
     const s = this.reportScope(q);
     const rows = [
       ['Current Operations','activeResidents','Active Residents','quarter','Snapshot at end of quarter.'],
@@ -1588,7 +1588,7 @@ const App = {
     return prior + Number(currentVal || 0);
   },
 
-  demographicTotals  demographicTotals(q) {
+  demographicTotals(q) {
     const r = this.data.reports[q] || {};
     const age = r.demographics_age_gender || {};
     const eth = this.normalizeEthnicity(r.demographics_ethnicity || {});
@@ -1638,7 +1638,7 @@ const App = {
     out['Other'] += Number(obj['Other'] || 0);
     return out;
   },
-  normalizeLanguage  normalizeLanguage(obj) {
+  normalizeLanguage(obj) {
     const out = {};
     this.languageKeys.forEach(k => out[k] = Number(obj[k] || 0));
     return out;
