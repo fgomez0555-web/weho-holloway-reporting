@@ -4,69 +4,217 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Holloway Reporting Portal — City of West Hollywood</title>
+
 <script>
   const SUPABASE_URL = 'https://osilouhgoehyesbastxr.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_mCJABa7yJS__DoG1QaSAbA_F8HHPrAl';
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital,opsz,wght@0,9..40,400;1,9..40,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+
 <style>
 :root {
-  --navy:#1B2F5B; --navy-light:#243a72;
-  --gold:#C9A24A; --gold-light:#e0bc6c;
-  --white:#FFFFFF; --off-white:#F7F6F2;
-  --gray-100:#F0EEE9; --gray-200:#E0DDD5; --gray-400:#9B9690; --gray-600:#6B6660; --gray-800:#3A3733;
-  --green:#2D7A4F; --green-light:#EAF5EE;
-  --red:#C0392B; --red-light:#FDECEA;
-  --amber:#D4860A; --amber-light:#FEF6E4;
-  --border:#D8D5CE;
-  --shadow:0 1px 3px rgba(27,47,91,.08), 0 4px 16px rgba(27,47,91,.06);
-  --shadow-lg:0 8px 32px rgba(27,47,91,.12);
-  --radius:6px; --radius-lg:10px;
+  --navy: #1B2F5B; --navy-light: #243a72;
+  --gold: #C9A24A; --gold-light: #e0bc6c;
+  --white: #FFFFFF; --off-white: #F7F6F2;
+  --gray-100: #F0EEE9; --gray-200: #E0DDD5; --gray-400: #9B9690; --gray-600: #6B6660; --gray-800: #3A3733;
+  --green: #2D7A4F; --green-light: #EAF5EE;
+  --red: #C0392B; --red-light: #FDECEA;
+  --amber: #D4860A; --amber-light: #FEF6E4;
+  --border: #D8D5CE;
+  --shadow: 0 1px 3px rgba(27,47,91,0.08), 0 4px 16px rgba(27,47,91,0.06);
+  --shadow-lg: 0 8px 32px rgba(27,47,91,0.12);
+  --radius: 6px; --radius-lg: 10px;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--off-white);color:var(--gray-800);min-height:100vh;font-size:14px;line-height:1.6}
-button,input,select,textarea{font-family:'DM Sans',sans-serif}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(201,162,74,.65);outline-offset:2px}
-.loading{position:fixed;inset:0;background:var(--navy);color:var(--white);z-index:3000;display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column}
-.hidden{display:none!important}
-.topbar{background:var(--navy);color:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:58px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18)}
-.topbar-brand{display:flex;align-items:center;gap:14px}.weho-emblem{width:34px;height:34px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy);font-weight:bold}
-.brand-program{font-family:'DM Serif Display',serif;font-size:15px}.brand-sub{font-size:10.5px;color:rgba(255,255,255,.6);font-weight:300;letter-spacing:.05em;text-transform:uppercase}.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.user-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px 4px 6px;font-size:12.5px;color:rgba(255,255,255,.88)}
-.user-avatar{width:24px;height:24px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--navy);font-weight:600}.logout-btn{font-size:12px;color:rgba(255,255,255,.68);background:none;border:none;cursor:pointer;padding:4px}.logout-btn:hover{color:white}
-.deadline-chip{border-radius:20px;padding:3px 9px;font-size:11.5px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08)}.deadline-chip.amber{background:rgba(212,134,10,.2);color:#ffd68e}.deadline-chip.red{background:rgba(192,57,43,.25);color:#ffc6be}
-.app-shell{display:flex;min-height:calc(100vh - 58px)}aside.sidebar{width:230px;background:var(--white);border-right:1px solid var(--border);padding:24px 0;flex-shrink:0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto}
-.sidebar-section{margin-bottom:24px}.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-400);padding:0 18px 8px}
-.sidebar-item{display:flex;align-items:center;gap:9px;padding:8px 18px;font-size:13px;color:var(--gray-600);cursor:pointer;border-left:3px solid transparent;transition:.15s;background:none;border-top:0;border-right:0;border-bottom:0;width:100%;text-align:left}
-.sidebar-item:hover{background:var(--gray-100);color:var(--navy)}.sidebar-item.active{background:#EEF2FA;color:var(--navy);font-weight:500;border-left-color:var(--navy)}.si-icon{font-size:15px;width:18px;text-align:center}
-main.main{flex:1;padding:28px 32px;max-width:1180px}.page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border);gap:16px}
-.page-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy);line-height:1.2}.page-subtitle{font-size:13px;color:var(--gray-400);margin-top:3px;font-weight:300}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:.15s;text-decoration:none}.btn-primary{background:var(--navy);color:white;border-color:var(--navy)}.btn-primary:hover{background:var(--navy-light)}.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:600}.btn-gold:hover{background:var(--gold-light)}.btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--gray-100);border-color:var(--gray-400)}.btn-red{background:var(--red);color:white;border-color:var(--red)}.btn-sm{padding:5px 11px;font-size:12px}.btn:disabled{opacity:.55;cursor:not-allowed}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}.badge-green{background:var(--green-light);color:var(--green)}.badge-amber{background:var(--amber-light);color:var(--amber)}.badge-red{background:var(--red-light);color:var(--red)}.badge-navy{background:#EEF2FA;color:var(--navy)}.badge-gray{background:var(--gray-100);color:var(--gray-600)}
-.card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow)}.card-header{padding:18px 22px 14px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;gap:12px}.card-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy)}.card-body{padding:22px}
-.notice{border-radius:var(--radius);padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;margin-bottom:18px}.notice.amber{background:var(--amber-light);border:1px solid #F0C96B;color:#7A5200}.notice.green{background:var(--green-light);border:1px solid #9FD4B5;color:#1A5735}.notice.navy{background:#EEF2FA;border:1px solid #BFD0F0;color:var(--navy)}.notice.gray{background:var(--gray-100);border:1px solid var(--border);color:var(--gray-600)}.notice.red{background:var(--red-light);border:1px solid #efb6b0;color:#7b2118}.notice-icon{font-size:16px;flex-shrink:0;margin-top:1px}
-.quarter-context{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:12px;margin-bottom:18px}.context-box{background:white;border:1px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)}.context-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-400);font-weight:600}.context-value{font-size:18px;color:var(--navy);font-weight:600;margin-top:3px}.context-sub{font-size:12px;color:var(--gray-600)}
-.quarter-selector{display:flex;gap:8px;margin-bottom:18px;align-items:center;flex-wrap:wrap}.quarter-selector-label{font-size:12px;font-weight:600;color:var(--gray-400);letter-spacing:.06em;text-transform:uppercase;margin-right:4px}.q-btn{padding:7px 18px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:white;color:var(--gray-600);transition:.18s}.q-btn:hover{border-color:var(--navy);color:var(--navy)}.q-btn.active{background:var(--navy);color:white;border-color:var(--navy)}.q-btn.accepted{border-color:var(--green);color:var(--green)}.q-btn.accepted.active{background:var(--green);color:white}.q-btn.submitted,.q-btn.under_review,.q-btn.resubmitted{border-color:var(--navy);color:var(--navy)}.q-btn.revision_requested{border-color:var(--red);color:var(--red)}.q-btn.incomplete,.q-btn.draft{border-color:var(--amber);color:var(--amber)}
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}.kpi-card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow);border-top:3px solid var(--navy)}.kpi-card.gold-accent{border-top-color:var(--gold)}.kpi-card.green-accent{border-top-color:var(--green)}.kpi-card.amber-accent{border-top-color:var(--amber)}.kpi-label{font-size:11px;color:var(--gray-400);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}.kpi-value{font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy);line-height:1}.kpi-sub{font-size:11.5px;color:var(--gray-400);margin-top:4px}
-.content-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:24px}.section-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px}.submissions-grid{display:grid;gap:12px;margin-bottom:24px}.submission-row{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);cursor:pointer;gap:12px}.submission-row:hover{box-shadow:var(--shadow-lg);border-color:var(--gray-400)}.submission-row.locked{opacity:.75}.sr-left{display:flex;align-items:center;gap:14px}.sr-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}.sr-icon.report{background:#EEF2FA}.sr-icon.roster{background:var(--green-light)}.sr-icon.exits{background:var(--amber-light)}.sr-info h4{font-size:13.5px;font-weight:500;color:var(--navy);margin-bottom:2px}.sr-info p{font-size:12px;color:var(--gray-400)}.sr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.readiness-list{list-style:none;display:grid;gap:10px}.readiness-item{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:white}.readiness-left{display:flex;align-items:center;gap:8px}.ready-icon{font-size:16px}.ready-label{font-size:13px;color:var(--navy);font-weight:500}.ready-detail{font-size:12px;color:var(--gray-600)}
-.progress-item{margin-bottom:14px}.progress-meta{display:flex;justify-content:space-between;margin-bottom:5px}.progress-label,.progress-val{font-size:12.5px;color:var(--gray-600)}.progress-val{font-weight:500;color:var(--navy)}.progress-track{height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden}.progress-fill{height:100%;border-radius:3px;background:var(--navy)}.progress-fill.green{background:var(--green)}.progress-fill.amber{background:var(--amber)}
-.form-overlay{display:none;position:fixed;inset:0;background:rgba(27,47,91,.55);z-index:200;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(2px)}.form-overlay.open{display:flex}.form-modal{background:white;border-radius:var(--radius-lg);width:100%;max-width:850px;box-shadow:var(--shadow-lg);overflow:hidden}.form-modal.wide{max-width:1040px}.form-modal-header{background:var(--navy);padding:22px 28px;display:flex;align-items:center;justify-content:space-between}.form-modal-title{font-family:'DM Serif Display',serif;font-size:18px;color:white}.form-modal-meta{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}.form-close-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px}.form-gold-bar{height:3px;background:var(--gold)}.readonly-banner{background:#EEF2FA;border-bottom:1px solid #BFD0F0;padding:10px 28px;font-size:12.5px;color:var(--navy);display:flex;align-items:center;gap:8px}
-.form-tabs{display:flex;background:var(--gray-100);border-bottom:1px solid var(--border)}.form-tab{padding:13px 20px;font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;border:0;border-bottom:3px solid transparent;transition:.15s;flex:1;text-align:center;background:var(--gray-100)}.form-tab.active{color:white;border-bottom-color:var(--gold);background:var(--navy)}.form-tab:hover:not(.active){color:var(--navy);background:var(--gray-200)}.tab-panel{display:none}.tab-panel.active{display:block}
-.form-body{padding:28px;max-height:62vh;overflow-y:auto}.form-section{margin-bottom:28px}.form-section-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--gold)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.form-row.full{grid-template-columns:1fr}.form-row.three{grid-template-columns:1fr 1fr 1fr}.field-group{display:flex;flex-direction:column;gap:5px}.field-label{font-size:12px;font-weight:600;color:var(--gray-600)}.field-label.required::after{content:' *';color:var(--red)}.field-input,.field-select,.field-textarea{border:1px solid var(--border);border-radius:var(--radius);padding:8px 11px;font-size:13.5px;color:var(--gray-800);background:white;width:100%}.field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,47,91,.08)}.field-input[readonly],.field-input:disabled,.field-select:disabled,.field-textarea:disabled{background:var(--gray-100);color:var(--gray-600);cursor:default}.field-textarea{resize:vertical;min-height:90px}.field-hint{font-size:11.5px;color:var(--gray-400)}.field-error{font-size:11.5px;color:var(--red);display:none}.field-group.invalid .field-input,.field-group.invalid .field-select,.field-group.invalid .field-textarea{border-color:var(--red);background:var(--red-light)}.field-group.invalid .field-error{display:block}
-.demo-grid{display:grid;grid-template-columns:1.3fr repeat(4,70px) 60px repeat(4,70px) 60px;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:auto;font-size:12px}.demo-cell{padding:6px 8px;border-bottom:1px solid var(--gray-100);border-right:1px solid var(--gray-100)}.demo-cell.header{background:var(--navy);color:white;font-size:10.5px;font-weight:600;text-align:center}.demo-cell.ytd-header{background:#344a80}.demo-cell.row-label{font-weight:600;color:var(--gray-600);background:var(--gray-100);font-size:11.5px}.demo-cell input[type=number]{width:54px;border:1px solid var(--border);border-radius:3px;padding:3px 5px;font-size:12px;text-align:center}.demo-cell.ro,.demo-cell.auto-calc{background:var(--gray-100);text-align:center;font-weight:700;color:var(--navy);font-size:12px}
-.svc-table{width:100%;border-collapse:collapse;font-size:12.5px}.svc-table th{background:var(--navy);color:white;padding:9px 12px;text-align:left;font-weight:500;font-size:11.5px}.svc-table td{padding:7px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}.svc-table .cat-header td{background:#EEF2FA;font-weight:700;color:var(--navy);font-size:12px;padding-top:10px}.svc-table td input[type=number]{width:80px;border:1px solid var(--border);border-radius:3px;padding:4px 8px;font-size:12.5px;text-align:right}.auto-ytd{background:var(--gray-100);border-radius:3px;padding:4px 8px;font-size:12.5px;color:var(--gray-600);text-align:right;min-width:60px;display:inline-block}
-.exit-table{width:100%;border-collapse:collapse;font-size:11.5px}.exit-table th{background:var(--navy);color:white;padding:8px;text-align:left;font-size:10.5px;font-weight:500;white-space:nowrap}.exit-table td{padding:6px 8px;border-bottom:1px solid var(--gray-100);vertical-align:top}.exit-table tr.historical td{background:var(--gray-100);color:var(--gray-600)}.exit-table td select,.exit-table td input[type=text]{width:100%;border:1px solid var(--border);border-radius:3px;padding:3px 6px;font-size:11px}.add-row-btn{font-size:12px;color:var(--navy);background:none;border:1px dashed var(--border);border-radius:var(--radius);padding:7px 14px;cursor:pointer;width:100%;margin-top:10px}.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:32px 20px;text-align:center;cursor:pointer;background:var(--gray-100)}.upload-zone:hover{border-color:var(--navy);background:#EEF2FA}.upload-zone input[type=file]{display:none}
-.form-footer{padding:16px 28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--gray-100);gap:12px}.form-footer-left{font-size:12px;color:var(--gray-600)}.autosave-state{font-size:12px;color:var(--gray-400);margin-left:6px}.error-chip{display:none;position:fixed;right:24px;bottom:24px;background:var(--red);color:white;border:0;border-radius:30px;padding:10px 16px;box-shadow:var(--shadow-lg);z-index:500;cursor:pointer}
-#login-screen{position:fixed;inset:0;background:var(--navy);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}.login-card{background:white;border-radius:12px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.35)}.login-header{background:var(--navy);padding:28px 32px;text-align:center;border-bottom:3px solid var(--gold)}.login-logo{width:52px;height:52px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin:0 auto 14px;font-weight:bold}.login-title{font-family:'DM Serif Display',serif;font-size:20px;color:white;margin-bottom:4px}.login-sub{font-size:12px;color:rgba(255,255,255,.55)}.login-body{padding:28px 32px}.login-submit{width:100%;padding:11px;background:var(--navy);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}.login-footer{font-size:12px;text-align:center;margin-top:16px;color:var(--gray-400)}
-@media (max-width:900px){.kpi-row,.content-grid,.quarter-context{grid-template-columns:1fr}.sidebar{display:none}.main{padding:20px}.form-row,.form-row.three{grid-template-columns:1fr}}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--gray-800); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+button, input, select, textarea { font-family: 'DM Sans', sans-serif; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgba(201,162,74,.45); outline-offset: 2px; }
+
+.loading-screen, #login-screen { position: fixed; inset: 0; background: var(--navy); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px; color: var(--white); }
+.loading-screen { flex-direction: column; gap: 12px; }
+
+.login-card { background: var(--white); color: var(--gray-800); border-radius: 12px; width: 100%; max-width: 410px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.35); }
+.login-header { background: var(--navy); padding: 28px 32px; text-align: center; border-bottom: 3px solid var(--gold); }
+.login-logo, .weho-emblem, .user-avatar { background: var(--gold); color: var(--navy); border-radius: 50%; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.login-logo { width: 52px; height: 52px; margin: 0 auto 14px; font-family: 'DM Serif Display', serif; font-size: 22px; }
+.login-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--white); }
+.login-sub { font-size: 12px; color: rgba(255,255,255,.62); }
+.login-body { padding: 28px 32px; }
+.login-submit { width: 100%; padding: 11px; background: var(--navy); color: var(--white); border: none; border-radius: var(--radius); font-weight: 700; cursor: pointer; }
+.login-footer { font-size: 12px; text-align: center; margin-top: 16px; color: var(--gray-400); }
+
+.topbar { background: var(--navy); color: var(--white); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 58px; border-bottom: 3px solid var(--gold); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.topbar-brand { display: flex; align-items: center; gap: 14px; }
+.weho-emblem { width: 34px; height: 34px; font-family:'DM Serif Display', serif; }
+.brand-program { font-family:'DM Serif Display', serif; font-size:15px; }
+.brand-sub { font-size:10.5px; color:rgba(255,255,255,.65); letter-spacing:.05em; text-transform:uppercase; }
+.topbar-right { display:flex; align-items:center; gap:14px; }
+.user-pill { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); border-radius:20px; padding:4px 12px 4px 6px; font-size:12.5px; }
+.user-avatar { width:24px; height:24px; font-size:11px; }
+.logout-btn { font-size:12px; color:rgba(255,255,255,.7); background:none; border:none; cursor:pointer; }
+.deadline-chip { font-size: 12px; border-radius: 18px; padding: 4px 10px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); }
+.deadline-chip.amber { background: rgba(212,134,10,.24); color: #FFE4A3; }
+.deadline-chip.red { background: rgba(192,57,43,.24); color: #FFD0CA; }
+
+.app-shell { display:flex; min-height:calc(100vh - 58px); }
+.sidebar { width: 230px; background:var(--white); border-right:1px solid var(--border); padding: 24px 0; flex-shrink:0; position: sticky; top:58px; height:calc(100vh - 58px); overflow-y:auto; }
+.sidebar-label { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gray-400); padding:0 18px 8px; }
+.sidebar-section { margin-bottom:22px; }
+.sidebar-item { display:flex; align-items:center; gap:9px; padding:9px 18px; font-size:13px; color:var(--gray-600); cursor:pointer; border-left:3px solid transparent; transition:.15s; }
+.sidebar-item:hover { background:var(--gray-100); color:var(--navy); }
+.sidebar-item.active { background:#EEF2FA; color:var(--navy); font-weight:600; border-left-color:var(--navy); }
+.si-icon { font-size:15px; width:18px; text-align:center; }
+
+.main { flex:1; padding:28px 32px; max-width:1180px; }
+.page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+.page-title { font-family:'DM Serif Display', serif; font-size:28px; color:var(--navy); line-height:1.2; }
+.page-subtitle { font-size:13px; color:var(--gray-400); margin-top:3px; }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius); font-size:13px; font-weight:700; cursor:pointer; border:1px solid transparent; transition:.15s; }
+.btn-primary { background:var(--navy); color:var(--white); border-color:var(--navy); }
+.btn-gold { background:var(--gold); color:var(--navy); border-color:var(--gold); }
+.btn-ghost { background:transparent; color:var(--navy); border-color:var(--border); }
+.btn-danger { background:var(--red); color:var(--white); border-color:var(--red); }
+.btn-sm { padding:5px 11px; font-size:12px; }
+.btn:disabled { opacity:.45; cursor:not-allowed; }
+
+.badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+.badge-green { background:var(--green-light); color:var(--green); }
+.badge-amber { background:var(--amber-light); color:var(--amber); }
+.badge-red { background:var(--red-light); color:var(--red); }
+.badge-navy { background:#EEF2FA; color:var(--navy); }
+.badge-gray { background:var(--gray-100); color:var(--gray-600); }
+
+.notice { border-radius: var(--radius); padding: 13px 16px; display:flex; gap:10px; font-size:13px; margin-bottom:18px; }
+.notice.amber { background:var(--amber-light); border:1px solid #F0C96B; color:#7A5200; }
+.notice.green { background:var(--green-light); border:1px solid #9FD4B5; color:#1A5735; }
+.notice.navy { background:#EEF2FA; border:1px solid #BFD0F0; color:var(--navy); }
+.notice.red { background:var(--red-light); border:1px solid #F3B0A7; color:#7A1E15; }
+
+.card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+.card-header { padding:18px 22px 14px; border-bottom:1px solid var(--gray-100); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.card-title { font-family:'DM Serif Display', serif; font-size:17px; color:var(--navy); }
+.card-body { padding:22px; }
+.kpi-row { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:20px; }
+.kpi-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; box-shadow:var(--shadow); border-top:3px solid var(--navy); }
+.kpi-card.gold { border-top-color:var(--gold); } .kpi-card.green { border-top-color:var(--green); } .kpi-card.amber { border-top-color:var(--amber); }
+.kpi-label { font-size:11px; color:var(--gray-400); font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.kpi-value { font-family:'DM Serif Display', serif; font-size:28px; color:var(--navy); line-height:1.1; margin-top:5px; }
+.kpi-sub { font-size:11.5px; color:var(--gray-400); margin-top:3px; }
+
+.quarter-selector { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; align-items:center; }
+.quarter-selector-label { font-size:12px; font-weight:700; color:var(--gray-400); letter-spacing:.06em; text-transform:uppercase; margin-right:4px; }
+.q-btn { padding:7px 18px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--white); color:var(--gray-600); }
+.q-btn.active { background:var(--navy); color:var(--white); border-color:var(--navy); }
+.q-btn.accepted { border-color:var(--green); color:var(--green); } .q-btn.accepted.active { background:var(--green); color:var(--white); }
+.q-btn.submitted, .q-btn.resubmitted { border-color:var(--navy); color:var(--navy); }
+.q-btn.revision_requested { border-color:var(--red); color:var(--red); }
+.q-btn.draft, .q-btn.incomplete { border-color:var(--amber); color:var(--amber); }
+
+.content-grid { display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:24px; }
+.section-label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:12px; }
+.readiness-row, .submission-row { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; box-shadow:var(--shadow); margin-bottom:10px; }
+.readiness-left { display:flex; align-items:center; gap:12px; }
+.status-icon { font-size:18px; }
+.progress-item { margin-bottom:14px; }
+.progress-meta { display:flex; justify-content:space-between; margin-bottom:5px; font-size:12.5px; }
+.progress-track { height:6px; background:var(--gray-200); border-radius:3px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--navy); border-radius:3px; }
+
+.view-section { display:none; }
+.view-section.active { display:block; }
+
+.form-overlay { display:none; position:fixed; inset:0; background:rgba(27,47,91,.55); z-index:1000; align-items:flex-start; justify-content:center; padding:38px 18px; overflow-y:auto; backdrop-filter:blur(2px); }
+.form-overlay.open { display:flex; }
+.form-modal { background:var(--white); border-radius:var(--radius-lg); width:100%; max-width:820px; box-shadow:var(--shadow-lg); overflow:hidden; }
+.form-modal.wide { max-width:1060px; }
+.form-modal-header { background:var(--navy); padding:20px 26px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.form-modal-title { font-family:'DM Serif Display', serif; font-size:19px; color:var(--white); }
+.form-modal-meta { font-size:12px; color:rgba(255,255,255,.62); margin-top:2px; }
+.form-close-btn { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:var(--white); width:32px; height:32px; border-radius:6px; cursor:pointer; }
+.form-gold-bar { height:3px; background:var(--gold); }
+.form-tabs { display:flex; background:var(--navy); border-bottom:3px solid var(--gold); }
+.form-tab { padding:13px 18px; font-size:13px; font-weight:800; color:rgba(255,255,255,.72); cursor:pointer; border:none; background:transparent; flex:1; text-align:center; }
+.form-tab.active { color:var(--navy); background:var(--gold); }
+.tab-panel { display:none; } .tab-panel.active { display:block; }
+.form-body { padding:26px; max-height:64vh; overflow-y:auto; }
+.form-section { margin-bottom:28px; }
+.form-section-title { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gray-200); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.form-row.three { grid-template-columns:1fr 1fr 1fr; }
+.field-group { display:flex; flex-direction:column; gap:5px; }
+.field-label { font-size:12px; font-weight:700; color:var(--gray-600); }
+.field-label.required::after { content:' *'; color:var(--red); }
+.field-input, .field-select, .field-textarea { border:1px solid var(--border); border-radius:var(--radius); padding:8px 11px; font-size:13.5px; color:var(--gray-800); background:var(--white); width:100%; }
+.field-input[readonly], .field-input:disabled, .field-select:disabled, .field-textarea:disabled { background:var(--gray-100); color:var(--gray-600); cursor:not-allowed; }
+.field-textarea { resize:vertical; min-height:90px; }
+.field-hint { font-size:11px; color:var(--gray-400); }
+.field-error { font-size:11px; color:var(--red); display:none; }
+.has-error .field-input, .has-error .field-select, .has-error .field-textarea { border-color:var(--red); box-shadow:0 0 0 3px rgba(192,57,43,.08); }
+.has-error .field-error { display:block; }
+.form-footer { padding:16px 26px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--gray-100); }
+.save-state { font-size:12px; color:var(--gray-500); }
+
+.demo-grid { display:grid; grid-template-columns: 1.2fr repeat(10, minmax(54px, auto)); border:1px solid var(--border); border-radius:var(--radius); overflow:auto; font-size:12px; }
+.demo-cell { padding:6px 8px; border-bottom:1px solid var(--gray-100); border-right:1px solid var(--gray-100); min-width:54px; }
+.demo-cell.header { background:var(--navy); color:var(--white); font-size:10.5px; font-weight:700; text-align:center; }
+.demo-cell.ytd-head { background:#314875; }
+.demo-cell.row-label { font-weight:700; color:var(--gray-600); background:var(--gray-100); min-width:100px; }
+.demo-cell input[type=number] { width:50px; border:1px solid var(--border); border-radius:3px; padding:3px 5px; font-size:12px; text-align:center; }
+.demo-cell.ro { background:var(--gray-100); text-align:center; font-weight:800; color:var(--navy); }
+
+.svc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.svc-table th { background:var(--navy); color:var(--white); padding:9px 12px; text-align:left; font-weight:700; font-size:11.5px; }
+.svc-table td { padding:8px 12px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
+.svc-table .cat-header td { background:#EEF2FA; font-weight:800; color:var(--navy); }
+.svc-table td input[type=number], .svc-table td input[type=text] { width:100%; border:1px solid var(--border); border-radius:3px; padding:5px 8px; font-size:12.5px; }
+
+.upload-zone { border:2px dashed var(--border); border-radius:var(--radius-lg); padding:30px 20px; text-align:center; cursor:pointer; background:var(--gray-100); }
+.upload-zone:hover { border-color:var(--navy); background:#EEF2FA; }
+.upload-zone input[type=file] { display:none; }
+
+.error-chip { position:fixed; right:22px; bottom:22px; background:var(--red); color:var(--white); border:none; border-radius:22px; padding:10px 16px; font-weight:800; box-shadow:var(--shadow-lg); display:none; z-index:2001; cursor:pointer; }
+.confirm-modal { display:none; position:fixed; inset:0; background:rgba(27,47,91,.55); z-index:2100; align-items:center; justify-content:center; padding:20px; }
+.confirm-modal.open { display:flex; }
+.confirm-card { background:var(--white); border-radius:var(--radius-lg); max-width:480px; width:100%; box-shadow:var(--shadow-lg); overflow:hidden; }
+.confirm-card .card-body { padding:22px; }
+
+.print-report { display:none; }
+.print-header { border-bottom:3px solid var(--gold); padding-bottom:14px; margin-bottom:18px; }
+.print-title { font-family:'DM Serif Display', serif; color:var(--navy); font-size:26px; }
+.print-section { margin:22px 0; page-break-inside:avoid; }
+.print-section h2 { color:var(--navy); font-family:'DM Serif Display', serif; font-size:18px; margin-bottom:8px; }
+.print-table { width:100%; border-collapse:collapse; font-size:11px; }
+.print-table th { background:#1B2F5B; color:white; text-align:left; padding:6px; }
+.print-table td { border:1px solid #ddd; padding:6px; vertical-align:top; }
+.page-break { page-break-before:always; }
+
+@media (max-width: 980px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .content-grid { grid-template-columns: 1fr; }
+  .form-row, .form-row.three { grid-template-columns: 1fr; }
+}
+@media (max-width: 800px) {
+  .sidebar { display:none; }
+  .main { padding:20px; }
+  .topbar { padding:0 16px; }
+}
+@media print {
+  body { background:white; color:#111; }
+  #app, #login-screen, #loading-screen, .confirm-modal, .form-overlay, .error-chip { display:none !important; }
+  .print-report { display:block !important; padding:28px; }
+  @page { margin: .55in; }
+}
 </style>
 </head>
-<body>
-<div class="loading" id="loading-screen"><div style="font-size:36px" aria-hidden="true">🏠</div><p style="margin-top:12px;font-size:14px;opacity:.7">Loading Holloway Reporting Portal…</p></div>
 
-<div id="login-screen">
+<body>
+<div id="loading-screen" class="loading-screen">
+  <div style="font-size:36px;" aria-hidden="true">🏠</div>
+  <p>Loading Holloway Reporting Portal…</p>
+</div>
+
+<div id="login-screen" style="display:none;">
   <div class="login-card">
     <div class="login-header">
       <div class="login-logo">W</div>
@@ -74,659 +222,1254 @@ main.main{flex:1;padding:28px 32px;max-width:1180px}.page-header{display:flex;al
       <div class="login-sub">City of West Hollywood · Human Services Division</div>
     </div>
     <div class="login-body">
-      <div class="field-group"><label class="field-label" for="login-email">Email Address</label><input type="email" id="login-email" class="field-input" autocomplete="email" placeholder="name@example.org" required></div>
-      <p id="login-error" style="color:#C0392B;font-size:12px;margin:0 0 8px"></p>
-      <button class="login-submit" id="login-submit-btn" onclick="App.login()">Send Secure Login Link →</button>
-      <div class="login-footer">Enter your approved email address and we’ll send a secure login link.<br>Access is restricted to authorized users.</div>
+      <div class="field-group">
+        <label class="field-label required" for="login-email">Email Address</label>
+        <input type="email" id="login-email" class="field-input" autocomplete="email" required placeholder="name@example.org" />
+      </div>
+      <p id="login-error" style="color:#C0392B;font-size:12px;margin:0 0 8px;"></p>
+      <button class="login-submit" id="login-submit-btn">Send Secure Login Link →</button>
+      <div class="login-footer">Enter your approved email address and we’ll send a secure login link.</div>
     </div>
   </div>
 </div>
 
-<div id="app" style="display:none">
-<header class="topbar">
-  <div class="topbar-brand">
-    <div class="weho-emblem">W</div>
-    <div class="brand-text"><div class="brand-program">Holloway Reporting Portal</div><div class="brand-sub">City of West Hollywood · Human Services</div></div>
-  </div>
-  <div class="topbar-right">
-    <span class="deadline-chip" id="deadline-chip"></span>
-    <span class="badge badge-navy" style="font-size:11px">FY 2025–26</span>
-    <div class="user-pill"><div class="user-avatar" id="user-avatar">--</div><span id="user-display">User</span></div>
-    <button class="logout-btn" onclick="App.logout()">Sign out</button>
-  </div>
-</header>
-
-<div class="app-shell">
-<aside class="sidebar" aria-label="Primary navigation">
-  <nav>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Workspace</div>
-      <button class="sidebar-item active" data-nav="dashboard" onclick="App.showView('dashboard')"><span class="si-icon" aria-hidden="true">⊞</span> Dashboard</button>
-      <button class="sidebar-item" data-nav="quarterly" onclick="App.openForm('quarterly', event.currentTarget)"><span class="si-icon" aria-hidden="true">📋</span> Quarterly Report</button>
-      <button class="sidebar-item" data-nav="roster" onclick="App.openForm('roster', event.currentTarget)"><span class="si-icon" aria-hidden="true">👥</span> Client Roster</button>
-      <button class="sidebar-item" data-nav="exits" onclick="App.openForm('exits', event.currentTarget)"><span class="si-icon" aria-hidden="true">↪</span> Exit Detail</button>
-    </div>
-    <div class="sidebar-section" id="admin-nav" style="display:none">
-      <div class="sidebar-label">City Admin</div>
-      <button class="sidebar-item" data-nav="review" onclick="App.showView('review')"><span class="si-icon" aria-hidden="true">✓</span> Review & Acceptance</button>
-      <button class="sidebar-item" data-nav="access" onclick="App.showView('access')"><span class="si-icon" aria-hidden="true">🔐</span> Access Management</button>
-    </div>
-  </nav>
-</aside>
-
-<main class="main">
-  <div id="dashboard-view">
-    <div class="notice amber" id="main-notice"><div class="notice-icon" aria-hidden="true">⚠️</div><div id="main-notice-text"></div></div>
-    <div class="page-header">
-      <div><div class="page-title" id="dash-title">Program Dashboard</div><div class="page-subtitle">Holloway Interim Housing Program · Contract Year: October 1, 2025 – September 30, 2026</div></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="window.print()">⬇ Print</button><button class="btn btn-gold" onclick="App.openForm('quarterly', event.currentTarget)">Start / Open Report</button></div>
-    </div>
-    <section class="quarter-context" id="quarter-context"></section>
-    <div class="quarter-selector" id="quarter-selector"></div>
-    <section class="kpi-row" id="kpi-row"></section>
-    <section class="content-grid">
+<div id="app" style="display:none;">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="weho-emblem">W</div>
       <div>
-        <div class="section-label" id="submissions-label"></div>
-        <div class="submissions-grid" id="submissions-grid"></div>
-      </div>
-      <div>
-        <div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">Submission Readiness</div><span class="badge badge-gray" id="readiness-chip">Draft</span></div><div class="card-body" id="readiness-card"></div></div>
-        <div class="card"><div class="card-header"><div class="card-title">Annual Goal Progress</div><span class="badge badge-gray" id="ytd-label">Through Q1</span></div><div class="card-body" id="goals-card"></div></div>
-      </div>
-    </section>
-  </div>
-
-  <div id="review-view" class="hidden">
-    <div class="page-header"><div><div class="page-title">City Admin Review & Acceptance</div><div class="page-subtitle">Review submitted Holloway reporting bundles, request revisions, or accept quarters.</div></div></div>
-    <div class="notice navy"><div class="notice-icon" aria-hidden="true">✓</div><div><strong>Review workflow</strong><br>Submitted and resubmitted bundles appear here. Accepted quarters remain read-only. Requesting revisions reopens the quarter for agency updates.</div></div>
-    <div class="card"><div class="card-header"><div class="card-title">Quarter Review Queue</div><button class="btn btn-ghost btn-sm" onclick="App.refresh()">Refresh</button></div><div class="card-body" style="overflow-x:auto"><table class="svc-table"><thead><tr><th>Quarter</th><th>Status</th><th>Submitted</th><th>Revision Count</th><th>City Notes</th><th>Actions</th></tr></thead><tbody id="review-tbody"></tbody></table></div></div>
-  </div>
-
-  <div id="access-view" class="hidden">
-    <div class="page-header"><div><div class="page-title">Access Management</div><div class="page-subtitle">Manage approved Holloway portal users.</div></div></div>
-    <div class="notice navy"><div class="notice-icon" aria-hidden="true">🔐</div><div><strong>Approved users only.</strong><br>Users added here can request a secure login link. Non-admin users are automatically scoped to Holloway.</div></div>
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header"><div class="card-title">Add or Update User</div></div>
-      <div class="card-body">
-        <div class="form-row"><div class="field-group"><label class="field-label required" for="admin-user-email">Email</label><input class="field-input" id="admin-user-email" type="email" placeholder="name@example.org" required></div><div class="field-group"><label class="field-label required" for="admin-user-name">Full Name</label><input class="field-input" id="admin-user-name" placeholder="Full name" required></div></div>
-        <div class="form-row three"><div class="field-group"><label class="field-label" for="admin-user-org">Organization</label><input class="field-input" id="admin-user-org" value="Ascencia"></div><div class="field-group"><label class="field-label required" for="admin-user-access-type">Access Type</label><select class="field-select" id="admin-user-access-type"><option value="agency_reporter">Agency Reporter</option><option value="agency_editor">Agency Editor</option><option value="agency_signer">Agency Signer</option><option value="viewer">Viewer</option><option value="city_admin">City Admin</option></select></div><div class="field-group"><label class="field-label" for="admin-user-active">Status</label><select class="field-select" id="admin-user-active"><option value="true">Active</option><option value="false">Inactive</option></select></div></div>
-        <div style="display:flex;gap:10px;margin-top:10px"><button class="btn btn-gold" onclick="App.saveApprovedUser()">Save User</button><button class="btn btn-ghost" onclick="App.clearAccessForm()">Clear</button></div>
-        <p id="access-message" style="font-size:12px;margin-top:10px;color:var(--gray-600)"></p>
+        <div class="brand-program">Holloway Reporting Portal</div>
+        <div class="brand-sub">City of West Hollywood · Human Services</div>
       </div>
     </div>
-    <div class="card"><div class="card-header"><div class="card-title">Approved Users</div><button class="btn btn-ghost btn-sm" onclick="App.loadApprovedUsers()">Refresh</button></div><div class="card-body" style="overflow-x:auto"><table class="svc-table"><thead><tr><th>Email</th><th>Name</th><th>Organization</th><th>Access</th><th>Status</th><th>Action</th></tr></thead><tbody id="approved-users-tbody"></tbody></table></div></div>
+    <div class="topbar-right">
+      <span id="deadline-chip" class="deadline-chip"></span>
+      <span class="badge badge-navy">FY 2025–26</span>
+      <div class="user-pill"><div class="user-avatar" id="user-avatar">U</div><span id="user-name">User</span></div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <nav aria-label="Main navigation">
+        <div class="sidebar-section">
+          <div class="sidebar-label" id="role-nav-label">Workspace</div>
+          <div class="sidebar-item active" data-view="dashboard"><span class="si-icon" aria-hidden="true">⊞</span>Dashboard</div>
+          <div class="sidebar-item" data-view="quarter"><span class="si-icon" aria-hidden="true">📊</span>Quarter Detail</div>
+          <div class="sidebar-item" id="nav-review" data-view="admin-review" style="display:none;"><span class="si-icon" aria-hidden="true">✅</span>Review Queue</div>
+          <div class="sidebar-item" id="nav-access" data-view="access" style="display:none;"><span class="si-icon" aria-hidden="true">🔐</span>Access Management</div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-label">Forms</div>
+          <div class="sidebar-item" data-action="quarterly"><span class="si-icon" aria-hidden="true">📋</span>Quarterly Report</div>
+          <div class="sidebar-item" data-action="roster"><span class="si-icon" aria-hidden="true">👥</span>Client Roster</div>
+          <div class="sidebar-item" data-action="exits"><span class="si-icon" aria-hidden="true">🚪</span>Exit Detail</div>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section id="view-dashboard" class="view-section active"></section>
+      <section id="view-quarter" class="view-section"></section>
+      <section id="view-admin-review" class="view-section"></section>
+      <section id="view-access" class="view-section"></section>
+    </main>
   </div>
-</main>
-</div>
 </div>
 
 <!-- Quarterly Modal -->
-<div class="form-overlay" id="quarterly-modal" role="dialog" aria-modal="true" aria-labelledby="qr-title">
-  <div class="form-modal">
-    <div class="form-modal-header"><div><div class="form-modal-title" id="qr-title">Quarterly Program Report <span class="autosave-state" id="qr-save-state"></span></div><div class="form-modal-meta" id="qr-modal-meta">Holloway Interim Housing Program</div></div><button class="form-close-btn" onclick="App.closeForm('quarterly')" aria-label="Close">✕</button></div>
-    <div class="form-gold-bar"></div><div class="readonly-banner" id="qr-readonly-banner" style="display:none">🔒 This quarter is accepted/read-only or not currently editable.</div>
-    <div class="notice gray" style="margin:16px 28px 0"><div class="notice-icon" aria-hidden="true">ℹ️</div><div><strong id="qr-instruction-title">Completion instructions</strong><br><span id="qr-instruction-text">Complete each tab, confirm totals, save, and submit the quarter when all three required components are ready.</span></div></div>
-    <div class="form-tabs"><button class="form-tab active" onclick="App.switchTab(this,'qr-cover')">Cover Page</button><button class="form-tab" onclick="App.switchTab(this,'qr-scope')">Scope of Services</button><button class="form-tab" onclick="App.switchTab(this,'qr-narrative')">Narrative</button><button class="form-tab" onclick="App.switchTab(this,'qr-review')">Review & Submit</button></div>
-    <div id="qr-cover" class="tab-panel active"><div class="form-body">
-      <div class="form-section"><div class="form-section-title">Program Information</div><div class="form-row"><div class="field-group"><label class="field-label">Agency</label><input class="field-input" value="Ascencia" readonly></div><div class="field-group"><label class="field-label">Program</label><input class="field-input" value="Holloway Interim Housing Program" readonly></div></div><div class="form-row"><div class="field-group"><label class="field-label">Reporting Quarter</label><input class="field-input" id="qr-quarter-display" readonly></div><div class="field-group"><label class="field-label">Contract Year</label><input class="field-input" value="October 1, 2025 – September 30, 2026" readonly></div></div></div>
-      <div class="form-section"><div class="form-section-title">New, Unduplicated Persons Served</div><div class="form-row three"><div class="field-group" data-field="persons_quarter"><label class="field-label required" for="qr-persons-quarter">This Quarter (WeHo)</label><input type="number" class="field-input" id="qr-persons-quarter" min="0" required><span class="field-hint">New, unduplicated WeHo clients this quarter.</span><span class="field-error"></span></div><div class="field-group"><label class="field-label">Year-to-Date (WeHo)</label><input type="number" class="field-input" id="qr-persons-ytd" readonly><span class="field-hint">Auto-calculated across the contract year.</span></div><div class="field-group"><label class="field-label" for="qr-persons-total">Total Project</label><input type="number" class="field-input" id="qr-persons-total" min="0"></div></div><div class="field-group"><label class="field-label" for="qr-data-source">Data Source</label><input class="field-input" id="qr-data-source" placeholder="e.g. Data was collected through enrollment via HMIS"></div></div>
-      <div class="form-section"><div class="form-section-title">Demographics — Age & Gender</div><p class="field-hint" style="margin-bottom:10px">Quarter totals must equal persons served this quarter. YTD columns are read-only and auto-calculated.</p><div class="demo-grid" id="demo-grid"></div><p id="demo-validation-note" class="field-hint" style="margin-top:8px"></p></div>
-      <div class="form-row"><div class="field-group"><label class="field-label" style="margin-bottom:8px">Ethnicity</label><div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"><table class="svc-table"><thead><tr><th>Ethnicity</th><th style="text-align:right;width:70px">Qtr</th><th style="text-align:right;width:65px">YTD</th></tr></thead><tbody id="ethnicity-table"></tbody></table></div></div><div class="field-group"><label class="field-label" style="margin-bottom:8px">Household Language</label><div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"><table class="svc-table"><thead><tr><th>Language</th><th style="text-align:right;width:70px">Qtr</th><th style="text-align:right;width:65px">YTD</th></tr></thead><tbody id="language-table"></tbody></table></div></div></div>
-      <div class="form-section" style="margin-top:20px"><div class="form-section-title">Signatory</div><div class="form-row three"><div class="field-group" data-field="signatory_name"><label class="field-label required" for="qr-signatory">Name / Title</label><input class="field-input" id="qr-signatory" required><span class="field-error"></span></div><div class="field-group" data-field="signatory_date"><label class="field-label required" for="qr-sig-date">Date</label><input type="date" class="field-input" id="qr-sig-date" required><span class="field-error"></span></div><div class="field-group"><label class="field-label" for="qr-sig-confirm">E-Signature Confirmation</label><select class="field-select" id="qr-sig-confirm"><option value="">— Select —</option><option>I confirm this is my electronic signature</option></select></div></div></div>
-    </div></div>
-    <div id="qr-scope" class="tab-panel"><div class="form-body"><div class="form-section"><div class="form-section-title">Scope of Services</div><div class="notice gray"><div class="notice-icon" aria-hidden="true">ℹ️</div><div><strong>YTD across contract year:</strong> cumulative values auto-calculate only for fields that are cumulative in the report. Quarter-only fields remain quarter-specific.</div></div><div style="overflow-x:auto"><table class="svc-table" id="scope-table"></table></div></div></div></div>
-    <div id="qr-narrative" class="tab-panel"><div class="form-body"><div class="form-section"><div class="form-section-title">Narrative</div><div class="field-group" data-field="narrative_text"><label class="field-label required" for="qr-narrative-text">Narrative</label><textarea class="field-textarea" id="qr-narrative-text" style="min-height:220px" placeholder="During this quarter, the Holloway Interim Housing Program…" required></textarea><span class="field-error"></span></div></div><div class="form-row"><div class="field-group"><label class="field-label required" for="qr-narrative-name">Submitted By</label><input class="field-input" id="qr-narrative-name" required></div><div class="field-group"><label class="field-label required" for="qr-narrative-date">Date</label><input type="date" class="field-input" id="qr-narrative-date" required></div></div></div></div>
-    <div id="qr-review" class="tab-panel"><div class="form-body"><div class="form-section"><div class="form-section-title">Submission Summary</div><div id="review-summary" style="font-size:13px;color:var(--gray-600);margin-bottom:16px"></div><ul class="checklist readiness-list" id="review-checklist"></ul></div></div></div>
-    <div class="form-footer"><div class="form-footer-left" id="qr-footer-note">Draft autosaves while editable.</div><div style="display:flex;gap:10px"><button class="btn btn-ghost" onclick="App.closeForm('quarterly')">Close</button><button class="btn btn-ghost" onclick="App.saveQuarterly(true)">Save Draft</button><button class="btn btn-gold" id="qr-submit-btn" onclick="App.submitComponent('quarterly')">Mark Report Complete →</button></div></div>
+<div id="modal-quarterly" class="form-overlay" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+  <div class="form-modal wide">
+    <div class="form-modal-header">
+      <div>
+        <div class="form-modal-title" id="qr-title">Quarterly Program Report</div>
+        <div class="form-modal-meta" id="qr-meta"></div>
+      </div>
+      <button class="form-close-btn" data-close="quarterly">✕</button>
+    </div>
+    <div class="form-gold-bar"></div>
+    <div class="form-tabs">
+      <button class="form-tab active" data-tab="qr-cover">Cover Page</button>
+      <button class="form-tab" data-tab="qr-scope">Scope of Services</button>
+      <button class="form-tab" data-tab="qr-narrative">Narrative</button>
+      <button class="form-tab" data-tab="qr-review">Review & Submit</button>
+    </div>
+    <div id="qr-cover" class="tab-panel active"><div class="form-body" id="qr-cover-body"></div></div>
+    <div id="qr-scope" class="tab-panel"><div class="form-body" id="qr-scope-body"></div></div>
+    <div id="qr-narrative" class="tab-panel"><div class="form-body" id="qr-narrative-body"></div></div>
+    <div id="qr-review" class="tab-panel"><div class="form-body" id="qr-review-body"></div></div>
+    <div class="form-footer">
+      <div class="save-state" id="qr-save-state">Not saved this session</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" data-close="quarterly">Close</button>
+        <button class="btn btn-ghost" id="btn-save-quarterly">Save Draft</button>
+        <button class="btn btn-gold" id="btn-submit-quarterly">Submit Report →</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Roster Modal -->
-<div class="form-overlay" id="roster-modal" role="dialog" aria-modal="true" aria-labelledby="roster-title">
-  <div class="form-modal" style="max-width:650px"><div class="form-modal-header"><div><div class="form-modal-title" id="roster-title">Client Roster <span class="autosave-state" id="roster-save-state"></span></div><div class="form-modal-meta" id="roster-modal-meta">HMIS-generated export</div></div><button class="form-close-btn" onclick="App.closeForm('roster')">✕</button></div><div class="form-gold-bar"></div><div class="form-body" style="max-height:none">
-    <div class="notice gray"><div class="notice-icon" aria-hidden="true">ℹ️</div><div><strong>HMIS export:</strong> Upload the HMIS-generated roster for clients active during the quarter. Summary fields should match the file.</div></div>
-    <label class="upload-zone"><input type="file" id="roster-file" accept=".xlsx,.csv,.xls"><div style="font-size:30px" aria-hidden="true">📁</div><div class="upload-zone-title" id="roster-file-title">Click to select your HMIS export file</div><div class="upload-zone-sub">Accepts .xlsx, .xls, or .csv</div></label>
-    <div class="form-section" style="margin-top:20px"><div class="form-section-title">Roster Period & Summary</div><div class="form-row"><div class="field-group" data-field="roster-start"><label class="field-label required" for="roster-start">Period Start</label><input type="date" class="field-input" id="roster-start" required><span class="field-error"></span></div><div class="field-group" data-field="roster-end"><label class="field-label required" for="roster-end">Period End</label><input type="date" class="field-input" id="roster-end" required><span class="field-error"></span></div></div><div class="form-row three"><div class="field-group" data-field="roster-unique"><label class="field-label required" for="roster-unique">Unique Clients</label><input type="number" class="field-input" id="roster-unique" min="0" required><span class="field-error"></span></div><div class="field-group"><label class="field-label" for="roster-enroll">Enrollments</label><input type="number" class="field-input" id="roster-enroll" min="0"></div><div class="field-group"><label class="field-label" for="roster-households">Households</label><input type="number" class="field-input" id="roster-households" min="0"></div></div><div class="field-group" style="margin-top:4px"><label class="field-label" for="roster-notes">Notes</label><textarea class="field-textarea" style="min-height:60px" id="roster-notes"></textarea></div></div>
-  </div><div class="form-footer"><div class="form-footer-left">Roster backs up figures in the Quarterly Report.</div><div style="display:flex;gap:10px"><button class="btn btn-ghost" onclick="App.closeForm('roster')">Close</button><button class="btn btn-gold" onclick="App.submitComponent('roster')">Mark Roster Complete →</button></div></div></div>
+<div id="modal-roster" class="form-overlay" role="dialog" aria-modal="true" aria-labelledby="roster-title">
+  <div class="form-modal">
+    <div class="form-modal-header">
+      <div>
+        <div class="form-modal-title" id="roster-title">Client Roster</div>
+        <div class="form-modal-meta" id="roster-meta"></div>
+      </div>
+      <button class="form-close-btn" data-close="roster">✕</button>
+    </div>
+    <div class="form-gold-bar"></div>
+    <div class="form-body" id="roster-body"></div>
+    <div class="form-footer">
+      <div class="save-state" id="roster-save-state">Not saved this session</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" data-close="roster">Close</button>
+        <button class="btn btn-gold" id="btn-save-roster">Save Roster</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Exits Modal -->
-<div class="form-overlay" id="exits-modal" role="dialog" aria-modal="true" aria-labelledby="exits-title">
-  <div class="form-modal wide"><div class="form-modal-header"><div><div class="form-modal-title" id="exits-title">Non-Permanent Exit Detail <span class="autosave-state" id="exits-save-state"></span></div><div class="form-modal-meta" id="exits-modal-meta">One row per non-permanent destination</div></div><button class="form-close-btn" onclick="App.closeForm('exits')">✕</button></div><div class="form-gold-bar"></div><div class="form-body">
-    <div class="notice gray"><div class="notice-icon" aria-hidden="true">ℹ️</div><div><strong>Non-Permanent Exit:</strong> An exit to anything other than permanent housing, including another interim setting, an institution, unknown destination, or return to homelessness.<br><strong>Voluntary vs. involuntary:</strong> Voluntary means the participant chose to leave; involuntary means the program ended the placement or required the exit.</div></div>
-    <div style="overflow-x:auto"><table class="exit-table"><thead><tr><th>#</th><th>Qtr</th><th>Exit Type</th><th>Vol./Invol.?</th><th>Reason for Exit</th><th>Interim Program</th><th>Why Better Fit?</th><th>Return Context</th><th>Follow-Up?</th><th>Notes</th></tr></thead><tbody id="exits-tbody"></tbody></table></div>
-    <button class="add-row-btn" id="exits-add-btn" onclick="App.addExitRow()">+ Add Exit Row</button>
-  </div><div class="form-footer"><div class="form-footer-left">If there were no non-permanent exits this quarter, leave the table blank and mark complete.</div><div style="display:flex;gap:10px"><button class="btn btn-ghost" onclick="App.closeForm('exits')">Close</button><button class="btn btn-gold" onclick="App.submitComponent('exits')">Mark Exit Detail Complete →</button></div></div></div>
+<div id="modal-exits" class="form-overlay" role="dialog" aria-modal="true" aria-labelledby="exits-title">
+  <div class="form-modal wide">
+    <div class="form-modal-header">
+      <div>
+        <div class="form-modal-title" id="exits-title">Non-Permanent Exit Detail</div>
+        <div class="form-modal-meta" id="exits-meta"></div>
+      </div>
+      <button class="form-close-btn" data-close="exits">✕</button>
+    </div>
+    <div class="form-gold-bar"></div>
+    <div class="form-body" id="exits-body"></div>
+    <div class="form-footer">
+      <div class="save-state" id="exits-save-state">Not saved this session</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" data-close="exits">Close</button>
+        <button class="btn btn-ghost" id="btn-add-exit">Add Exit Row</button>
+        <button class="btn btn-gold" id="btn-save-exits">Save Exit Detail</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<button class="error-chip" id="error-chip" onclick="App.focusFirstError()">0 fields need attention →</button>
+<!-- Confirmation Modal -->
+<div id="confirm-modal" class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="confirm-card">
+    <div class="card-header">
+      <div class="card-title" id="confirm-title">Confirm Action</div>
+    </div>
+    <div class="card-body">
+      <p id="confirm-message" style="font-size:13px;color:var(--gray-600);margin-bottom:18px;"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+        <button class="btn btn-primary" id="confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button id="error-chip" class="error-chip">0 fields need attention →</button>
+<div id="print-report" class="print-report"></div>
 
 <script>
-const App = (() => {
-  const { createClient } = supabase;
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const App = {
+  sb: null,
+  user: null,
+  profile: null,
+  program: null,
+  fiscalYear: 'FY2025-26',
+  currentQuarter: 'Q3',
+  view: 'dashboard',
+  data: {
+    reports: {},
+    rosters: {},
+    bundles: {},
+    exits: [],
+    approvedUsers: [],
+    activity: []
+  },
+  saveTimers: {},
+  dirty: { quarterly:false, roster:false, exits:false },
+  errors: {},
+  focusReturn: null,
 
-  const STATUS = {
-    accepted:'Accepted',
-    submitted:'Submitted',
-    resubmitted:'Resubmitted',
-    under_review:'Under Review',
-    revision_requested:'Revision Requested',
-    returned:'Revision Requested',
-    incomplete:'Incomplete',
-    draft:'Draft',
-    voided:'Voided'
-  };
-  const QINFO = {
-    Q1:{label:'Q1',period:'October 1 – December 31, 2025',due:'2026-01-15'},
-    Q2:{label:'Q2',period:'January 1 – March 31, 2026',due:'2026-04-15'},
-    Q3:{label:'Q3',period:'April 1 – June 30, 2026',due:'2026-06-15'},
-    Q4:{label:'Q4',period:'July 1 – September 30, 2026',due:'2026-10-15'}
-  };
-  const AGE_BANDS = ['18–24','25–39','40–49','50–61','62–64','65–74','75–84','85+'];
-  const ETHNICITIES = ['Asian/Pacific Islander','Black, African American, or African','Hispanic/Latina/o/e','American Indian / Alaska Native','White','Other (Middle Eastern/North African)','Unknown'];
-  const LANGUAGES = ['English','Spanish','Russian','Farsi','Other'];
-  const cumulativeScope = ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'];
+  quarters: {
+    Q1: { period:'October 1 – December 31, 2025', due:'2026-01-15', label:'Q1' },
+    Q2: { period:'January 1 – March 31, 2026', due:'2026-04-15', label:'Q2' },
+    Q3: { period:'April 1 – June 30, 2026', due:'2026-06-15', label:'Q3' },
+    Q4: { period:'July 1 – September 30, 2026', due:'2026-10-15', label:'Q4' }
+  },
 
-  let profile = null, program = null, currentQuarter = 'Q1', activeView = 'dashboard';
-  let reports = {}, rosters = {}, bundles = {}, exits = [], approvedUsers = [];
-  let autosaveTimers = {}, lastFocus = null;
+  ageBands: ['18–24','25–39','40–49','50–61','62–64','65–74','75–84','85+'],
+  ethnicityKeys: ['Asian/Pacific Islander','Black, African American, or African','Hispanic/Latina/o/e','American Indian / Alaska Native','White','Other (Middle Eastern/North African)','Unknown'],
+  languageKeys: ['English','Spanish','Russian','Farsi','Other'],
 
-  const $ = id => document.getElementById(id);
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const n = v => Number.isFinite(Number(v)) ? Number(v) : 0;
-  const todayISO = () => new Date().toISOString().slice(0,10);
-  const role = () => profile?.role === 'city_admin' ? 'city_admin' : (profile?.access_type || (profile?.role === 'city_admin' ? 'city_admin' : 'agency_reporter'));
-  const isAdmin = () => role() === 'city_admin';
-  const statusOf = q => bundles[q]?.city_review_status || bundles[q]?.bundle_status || reports[q]?.status || 'incomplete';
-  const isEditable = q => !['accepted','voided','submitted','under_review','resubmitted'].includes(statusOf(q));
-  const qOrder = q => ['Q1','Q2','Q3','Q4'].indexOf(q);
+  cumulativeScope: ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'],
+  scopeMap: {
+    activeResidents:'active_residents', residentsServed:'residents_served', unduplicatedYTD:'unduplicated_ytd',
+    newIntakes:'new_intakes', bedNightsAvail:'bed_nights_available', bedNightsOcc:'bed_nights_occupied',
+    phExits:'ph_exits', avgDaysToPH:'avg_days_to_ph', suppServicesEngaged:'supp_services_engaged',
+    incomeIncrease:'income_increase', incomeMaintained:'income_maintained', satSatisfied:'satisfaction_satisfied',
+    satTotal:'satisfaction_total', exitsTemp:'exits_temp_housing', exitsInstitutional:'exits_institutional',
+    exitsHomeless:'exits_returned_homeless', exitsUnknown:'exits_unknown'
+  },
 
-  function blankDemo(){
-    const ageGender = {}; AGE_BANDS.forEach(a => ageGender[a] = {male:0,female:0,nb:0,unk:0});
-    const ethnicity = {}; ETHNICITIES.forEach(e => ethnicity[e]=0);
-    const language = {}; LANGUAGES.forEach(l => language[l]=0);
-    return {ageGender, ethnicity, language};
-  }
-  function reportFor(q){
-    const r = reports[q] || {};
-    return {
-      quarter:q, fiscal_year:'FY2025-26',
-      persons_quarter:r.persons_quarter ?? null,
-      persons_ytd:r.persons_ytd ?? null,
-      persons_total:r.persons_total ?? null,
-      data_source_note:r.data_source_note || '',
-      signatory_name:r.signatory_name || 'Laura Duncan, Executive Director',
-      signatory_date:r.signatory_date || '',
-      narrative_text:r.narrative_text || '',
-      narrative_submitted_by:r.narrative_submitted_by || 'Laura Duncan, Executive Director',
-      narrative_date:r.narrative_date || '',
-      demographics_age_gender: normalizeAgeGender(r.demographics_age_gender || {}),
-      demographics_ethnicity: normalizeMap(r.demographics_ethnicity || {}, ETHNICITIES),
-      demographics_language: normalizeMap(r.demographics_language || {}, LANGUAGES),
-      active_residents:r.active_residents ?? null,
-      residents_served:r.residents_served ?? null,
-      unduplicated_ytd:r.unduplicated_ytd ?? null,
-      new_intakes:r.new_intakes ?? null,
-      bed_nights_available:r.bed_nights_available ?? null,
-      bed_nights_occupied:r.bed_nights_occupied ?? null,
-      ph_exits:r.ph_exits ?? null,
-      avg_days_to_ph:r.avg_days_to_ph ?? null,
-      six_month_placements:r.six_month_placements ?? null,
-      six_month_housed:r.six_month_housed ?? null,
-      twelve_month_placements:r.twelve_month_placements ?? null,
-      twelve_month_housed:r.twelve_month_housed ?? null,
-      supp_services_engaged:r.supp_services_engaged ?? null,
-      income_increase:r.income_increase ?? null,
-      income_maintained:r.income_maintained ?? null,
-      satisfaction_satisfied:r.satisfaction_satisfied ?? null,
-      satisfaction_total:r.satisfaction_total ?? null,
-      exits_temp_housing:r.exits_temp_housing ?? null,
-      exits_institutional:r.exits_institutional ?? null,
-      exits_returned_homeless:r.exits_returned_homeless ?? null,
-      exits_unknown:r.exits_unknown ?? null
-    };
-  }
-  function normalizeAgeGender(obj){
-    const out = blankDemo().ageGender;
-    Object.entries(obj || {}).forEach(([raw,val]) => {
-      const k = raw.replace('-', '–');
-      if (out[k]) out[k] = {male:n(val.male),female:n(val.female),nb:n(val.nb),unk:n(val.unk)};
+  init() {
+    this.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    this.bindStaticEvents();
+    this.checkSession();
+  },
+
+  bindStaticEvents() {
+    document.getElementById('login-submit-btn').addEventListener('click', () => this.login());
+    document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') this.login(); });
+    document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+
+    document.querySelectorAll('.sidebar-item[data-view]').forEach(el => {
+      el.addEventListener('click', () => this.showView(el.dataset.view));
     });
-    return out;
-  }
-  function normalizeMap(obj, keys){
-    const out = {}; keys.forEach(k => out[k]=0);
-    Object.entries(obj || {}).forEach(([k,v]) => {
-      if (out.hasOwnProperty(k)) out[k]=n(v);
-      else if (k === 'Other') out['Other (Middle Eastern/North African)'] += n(v);
+    document.querySelectorAll('.sidebar-item[data-action]').forEach(el => {
+      el.addEventListener('click', () => this.openForm(el.dataset.action));
     });
-    return out;
-  }
-  function qStatusBadge(st){
-    const label = STATUS[st] || st || 'Incomplete';
-    const cls = st === 'accepted' ? 'badge-green' : ['submitted','under_review','resubmitted'].includes(st) ? 'badge-navy' : ['revision_requested','returned','voided'].includes(st) ? 'badge-red' : 'badge-amber';
-    return `<span class="badge ${cls}">${esc(label)}</span>`;
-  }
-
-  async function login(){
-    const email = $('login-email').value.trim().toLowerCase();
-    $('login-error').textContent = '';
-    if (!email) { $('login-error').textContent = 'Enter your email address.'; return; }
-    const { data: approved, error: apErr } = await sb.from('approved_users').select('*').eq('email', email).eq('active', true).maybeSingle();
-    if (apErr || !approved) { $('login-error').textContent = 'This email is not approved for access.'; return; }
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options:{ shouldCreateUser:true, emailRedirectTo:'https://fgomez0555-web.github.io/weho-holloway-reporting/' }
+    document.querySelectorAll('[data-close]').forEach(el => {
+      el.addEventListener('click', () => this.closeForm(el.dataset.close));
     });
-    if (error) { $('login-error').textContent = error.message || 'Login link could not be sent.'; return; }
-    $('login-error').style.color = '#2D7A4F';
-    $('login-error').textContent = 'Check your email for a secure login link.';
-  }
-  async function logout(){ await sb.auth.signOut(); location.reload(); }
+    document.querySelectorAll('.form-tab').forEach(tab => {
+      tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+    });
 
-  async function init(){
-    try {
-      const { data:{ session } } = await sb.auth.getSession();
-      if (!session) { $('loading-screen').style.display='none'; $('login-screen').style.display='flex'; return; }
-      const { data: ensured, error: rpcErr } = await sb.rpc('ensure_my_profile');
-      if (rpcErr) throw rpcErr;
-      profile = ensured;
-      await loadAll();
-      renderShell();
-      $('login-screen').style.display='none';
-      $('app').style.display='block';
-      $('loading-screen').style.display='none';
-      showView(isAdmin() ? 'review' : 'dashboard');
-    } catch(e) {
-      console.error(e);
-      $('loading-screen').innerHTML = `<div style="max-width:520px;padding:24px"><h2>Unable to load portal</h2><p>${esc(e.message || e)}</p><button class="btn btn-gold" onclick="location.reload()">Reload</button></div>`;
+    document.getElementById('btn-save-quarterly').addEventListener('click', () => this.saveQuarterly('manual'));
+    document.getElementById('btn-submit-quarterly').addEventListener('click', () => this.submitQuarterlyReport());
+    document.getElementById('btn-save-roster').addEventListener('click', () => this.saveRoster('manual'));
+    document.getElementById('btn-add-exit').addEventListener('click', () => this.addExitDraftRow());
+    document.getElementById('btn-save-exits').addEventListener('click', () => this.saveExits('manual'));
+    document.getElementById('error-chip').addEventListener('click', () => this.scrollToFirstError());
+    document.getElementById('confirm-cancel').addEventListener('click', () => this.closeConfirm());
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        const open = document.querySelector('.form-overlay.open');
+        if (open) this.closeForm(open.id.replace('modal-',''));
+        if (document.getElementById('confirm-modal').classList.contains('open')) this.closeConfirm();
+      }
+    });
+  },
+
+  async checkSession() {
+    document.getElementById('loading-screen').style.display = 'flex';
+    const { data: { session } } = await this.sb.auth.getSession();
+    if (!session) {
+      this.showLogin();
+      return;
     }
-  }
+    this.user = session.user;
+    try {
+      await this.ensureProfile();
+      await this.loadAll();
+      this.showApp();
+    } catch (err) {
+      console.error(err);
+      await this.sb.auth.signOut();
+      this.showLogin('Your account could not be loaded. Please contact the City program monitor.');
+    }
+  },
 
-  async function loadAll(){
-    const { data: programs } = await sb.from('programs').select('*').eq('name','Holloway Interim Housing Program').limit(1);
-    program = programs?.[0];
-    const pid = program?.id || profile?.program_id;
-    const fiscal = 'FY2025-26';
-    const [rep, ros, bun, ex] = await Promise.all([
-      sb.from('quarterly_reports').select('*').eq('program_id', pid).eq('fiscal_year', fiscal),
-      sb.from('client_rosters').select('*').eq('program_id', pid).eq('fiscal_year', fiscal),
-      sb.from('submission_bundles').select('*').eq('program_id', pid).eq('fiscal_year', fiscal),
-      sb.from('non_permanent_exits').select('*').eq('program_id', pid).eq('fiscal_year', fiscal).order('quarter').order('exit_number')
-    ]);
-    if (rep.error) throw rep.error; if (ros.error) throw ros.error; if (bun.error) throw bun.error; if (ex.error) throw ex.error;
-    reports = Object.fromEntries((rep.data || []).map(r => [r.quarter, r]));
-    rosters = Object.fromEntries((ros.data || []).map(r => [r.quarter, r]));
-    bundles = Object.fromEntries((bun.data || []).map(b => [b.quarter, b]));
-    exits = ex.data || [];
-    ['Q1','Q2','Q3','Q4'].forEach(q => { if (!bundles[q]) bundles[q] = { quarter:q, fiscal_year:fiscal, bundle_status:'incomplete', city_review_status:'incomplete' }; });
-  }
-  async function refresh(){ await loadAll(); render(); }
+  showLogin(message='') {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-error').textContent = message;
+  },
 
-  function renderShell(){
-    const name = profile?.full_name || 'User';
-    $('user-display').textContent = `${name} · ${isAdmin() ? 'City Admin' : 'Agency User'}`;
-    $('user-avatar').textContent = name.split(/\s+/).map(x => x[0]).join('').slice(0,2).toUpperCase();
-    $('admin-nav').style.display = isAdmin() ? 'block' : 'none';
-  }
-  function showView(view){
-    activeView = view;
-    ['dashboard','review','access'].forEach(v => $(`${v}-view`)?.classList.toggle('hidden', v !== view));
-    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.toggle('active', b.dataset.nav === view || (view === 'dashboard' && b.dataset.nav === 'dashboard')));
-    if (view === 'review') renderReviewQueue();
-    if (view === 'access') loadApprovedUsers();
-    if (view === 'dashboard') render();
-  }
-  function render(){
-    renderQuarterSelector();
-    renderQuarterContext();
-    renderNotice();
-    renderDeadline();
-    renderKPIs();
-    renderSubmissions();
-    renderReadiness();
-    renderGoals();
-    renderReviewQueue();
-  }
-  function renderQuarterSelector(){
-    $('quarter-selector').innerHTML = `<span class="quarter-selector-label">Quarter</span>` + ['Q1','Q2','Q3','Q4'].map(q => {
-      const st = statusOf(q);
-      const icon = st === 'accepted' ? '✓' : ['submitted','under_review','resubmitted'].includes(st) ? '●' : ['revision_requested','returned'].includes(st) ? '!' : '';
-      return `<button class="q-btn ${esc(st)} ${q===currentQuarter?'active':''}" onclick="App.setQuarter('${q}')">${q} ${icon}</button>`;
-    }).join('');
-  }
-  function setQuarter(q){ currentQuarter = q; render(); }
-  function renderQuarterContext(){
-    const q = currentQuarter, r = reportFor(q), st = statusOf(q);
-    const occ = r.bed_nights_available ? Math.round(n(r.bed_nights_occupied)/n(r.bed_nights_available)*100) : null;
-    $('quarter-context').innerHTML = `
-      <div class="context-box"><div class="context-label">Active Quarter</div><div class="context-value">${q} · ${qStatusBadge(st)}</div><div class="context-sub">${QINFO[q].period}</div></div>
-      <div class="context-box"><div class="context-label">Due Date</div><div class="context-value">${fmtDate(QINFO[q].due)}</div><div class="context-sub">${daysUntil(QINFO[q].due)}</div></div>
-      <div class="context-box"><div class="context-label">YTD Persons</div><div class="context-value">${calcPersonsYTD(q)}</div><div class="context-sub">Contract year total</div></div>
-      <div class="context-box"><div class="context-label">Occupancy</div><div class="context-value">${occ === null ? '—' : occ + '%'}</div><div class="context-sub">This quarter</div></div>
-      <div class="context-box"><div class="context-label">Report Status</div><div class="context-value">${STATUS[st] || st}</div><div class="context-sub">${isEditable(q) ? 'Editable' : 'Read-only'}</div></div>`;
-  }
-  function renderNotice(){
-    const st = statusOf(currentQuarter);
-    const notes = bundles[currentQuarter]?.city_review_notes;
-    const msg = st === 'accepted' ? `<strong>${currentQuarter} Accepted.</strong> This quarter is read-only for reference.`
-      : ['revision_requested','returned'].includes(st) ? `<strong>Revisions requested for ${currentQuarter}.</strong> ${esc(notes || 'Please review City comments and resubmit.')}`
-      : `<strong>${currentQuarter} Report Due ${fmtDate(QINFO[currentQuarter].due)}.</strong> Complete the Quarterly Report, Client Roster, and Exit Detail before submitting the quarter.`;
-    $('main-notice').className = `notice ${st === 'accepted' ? 'green' : ['revision_requested','returned'].includes(st) ? 'red' : 'amber'}`;
-    $('main-notice-text').innerHTML = msg;
-  }
-  function renderDeadline(){
-    const chip = $('deadline-chip'), st = statusOf(currentQuarter);
-    if (st === 'accepted') { chip.style.display = 'none'; return; }
-    const d = Math.ceil((new Date(QINFO[currentQuarter].due) - new Date()) / 86400000);
-    chip.style.display = 'inline-flex';
-    chip.className = 'deadline-chip' + (d <= 3 ? ' red' : d <= 14 ? ' amber' : '');
-    chip.textContent = d < 0 ? `${currentQuarter} overdue` : `${currentQuarter} due in ${d} days`;
-  }
-  function renderKPIs(){
-    const q = currentQuarter, r = reportFor(q);
-    const occ = r.bed_nights_available ? Math.round(n(r.bed_nights_occupied)/n(r.bed_nights_available)*100) + '%' : '—';
-    $('kpi-row').innerHTML = [
-      ['Persons Served', r.persons_quarter ?? '—', `YTD: ${calcPersonsYTD(q)}`, ''],
-      ['Occupancy Rate', occ, `${n(r.bed_nights_occupied).toLocaleString()} / ${n(r.bed_nights_available).toLocaleString()} bed nights`, 'gold-accent'],
-      ['PH Exits', calcScopeYTD(q,'phExits'), 'YTD permanent housing exits', 'green-accent'],
-      ['Non-PH Exits', calcNonPHYTD(q), 'YTD non-permanent exits', 'amber-accent']
-    ].map(([label,value,sub,cls]) => `<div class="kpi-card ${cls}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`).join('');
-  }
-  function renderSubmissions(){
-    const q = currentQuarter, st = statusOf(q), locked = !isEditable(q);
-    $('submissions-label').textContent = `Reporting Requirements — ${q}`;
-    const rows = [
-      ['report','📋','Quarterly Program Report', reportReady(q), () => openForm('quarterly')],
-      ['roster','👥','Client Roster', rosterReady(q), () => openForm('roster')],
-      ['exits','↪','Non-Permanent Exit Detail', exitsReady(q), () => openForm('exits')]
-    ];
-    $('submissions-grid').innerHTML = rows.map(([cls,icon,title,ready]) => `
-      <div class="submission-row ${locked?'locked':''}" onclick="App.openForm('${cls === 'report' ? 'quarterly' : cls}', event.currentTarget)">
-        <div class="sr-left"><div class="sr-icon ${cls}" aria-hidden="true">${icon}</div><div class="sr-info"><h4>${title}</h4><p>${ready.ok ? 'Complete' : ready.msg}</p></div></div>
-        <div class="sr-right">${ready.ok ? qStatusBadge('accepted') : '<span class="badge badge-amber">Needs attention</span>'}</div>
-      </div>`).join('');
-  }
-  function renderReadiness(){
-    const q=currentQuarter, items=[['Quarterly Program Report',reportReady(q)],['Client Roster',rosterReady(q)],['Non-Permanent Exit Detail',exitsReady(q)]];
-    const allReady = items.every(i => i[1].ok);
-    $('readiness-chip').className = `badge ${allReady?'badge-green':'badge-amber'}`;
-    $('readiness-chip').textContent = allReady ? 'Ready' : 'In Progress';
-    $('readiness-card').innerHTML = `<ul class="readiness-list">${items.map(([label,r]) => `<li class="readiness-item"><span class="readiness-left"><span class="ready-icon">${r.ok?'✅':r.started?'⚠':'⚪'}</span><span><span class="ready-label">${label}</span><br><span class="ready-detail">${r.ok?'Complete':r.msg}</span></span></span></li>`).join('')}</ul>
-      <button class="btn btn-gold" style="width:100%;margin-top:14px" ${allReady && isEditable(q) ? '' : 'disabled'} onclick="App.submitBundle()">${['revision_requested','returned'].includes(statusOf(q))?'Resubmit Quarter':'Submit Quarter'}</button>`;
-  }
-  function renderGoals(){
-    const q=currentQuarter;
-    $('ytd-label').textContent = `Through ${q}`;
-    const residents = calcScopeYTD(q,'newIntakes');
-    const ph = calcScopeYTD(q,'phExits');
-    const bedOcc = calcScopeYTD(q,'bedNightsOcc'), bedAvail = calcScopeYTD(q,'bedNightsAvail');
-    $('goals-card').innerHTML = progress('YTD Persons Served', residents, 32) + progress('PH Exits', ph, Math.max(1, ph)) + progress('YTD Bed-Night Occupancy', bedOcc, bedAvail || 1);
-  }
-  function progress(label,val,total){
-    const pct = total ? Math.min(100, Math.round(n(val)/n(total)*100)) : 0;
-    return `<div class="progress-item"><div class="progress-meta"><span class="progress-label">${label}</span><span class="progress-val">${n(val).toLocaleString()}${total?` / ${n(total).toLocaleString()}`:''}</span></div><div class="progress-track"><div class="progress-fill ${pct>75?'green':'amber'}" style="width:${pct}%"></div></div></div>`;
-  }
+  showApp() {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    this.renderUser();
+    this.renderSidebarForRole();
+    this.showView(this.isAdmin() ? 'admin-review' : 'dashboard');
+  },
 
-  function fmtDate(d){ return d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '—'; }
-  function daysUntil(d){ const x=Math.ceil((new Date(d)-new Date())/86400000); return x<0?`${Math.abs(x)} days overdue`:x===0?'Due today':`${x} days remaining`; }
+  async login() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const errorEl = document.getElementById('login-error');
+    if (!email) { errorEl.textContent = 'Please enter your email address.'; return; }
+    errorEl.textContent = '';
 
-  function reportReady(q){ const r=reportFor(q); const errs = validateReport(q, false); return {ok: errs.length===0 && !!reports[q], started: !!reports[q] || n(r.persons_quarter)>0, msg: errs[0]?.message || 'Not started'}; }
-  function rosterReady(q){ const r=rosters[q]; return {ok: !!(r && r.period_start && r.period_end && n(r.unique_clients) >= 0), started: !!r, msg: r ? 'Missing roster summary fields' : 'Not started'}; }
-  function exitsReady(q){ return {ok: true, started: exits.some(e => e.quarter===q), msg: 'Complete if no non-permanent exits occurred'}; }
+    const { data: approved, error: approvedError } = await this.sb
+      .from('approved_users')
+      .select('*')
+      .eq('email', email)
+      .eq('active', true)
+      .maybeSingle();
 
-  function calcPersonsYTD(q){ return ['Q1','Q2','Q3','Q4'].filter(x=>qOrder(x)<=qOrder(q)).reduce((sum,x)=>sum+n(reportFor(x).persons_quarter),0); }
-  function calcScopeYTD(q,key){
-    const col = {newIntakes:'new_intakes',bedNightsAvail:'bed_nights_available',bedNightsOcc:'bed_nights_occupied',phExits:'ph_exits',exitsTemp:'exits_temp_housing',exitsInstitutional:'exits_institutional',exitsHomeless:'exits_returned_homeless',exitsUnknown:'exits_unknown'}[key];
-    return ['Q1','Q2','Q3','Q4'].filter(x=>qOrder(x)<=qOrder(q)).reduce((sum,x)=>sum+n(reports[x]?.[col]),0);
-  }
-  function calcNonPHYTD(q){ return calcScopeYTD(q,'exitsTemp')+calcScopeYTD(q,'exitsInstitutional')+calcScopeYTD(q,'exitsHomeless')+calcScopeYTD(q,'exitsUnknown'); }
-  function calcDemoYTD(q, section, key, subkey){
-    return ['Q1','Q2','Q3','Q4'].filter(x=>qOrder(x)<=qOrder(q)).reduce((sum,x)=>{
-      const r = reportFor(x);
-      const d = section==='age' ? r.demographics_age_gender?.[key]?.[subkey] : section==='ethnicity' ? r.demographics_ethnicity?.[key] : r.demographics_language?.[key];
-      return sum+n(d);
-    },0);
-  }
+    if (approvedError || !approved) {
+      errorEl.textContent = 'This email address is not approved for access.';
+      return;
+    }
 
-  function openForm(type, trigger){
-    lastFocus = trigger || document.activeElement;
-    const modal = $(`${type}-modal`);
-    modal.classList.add('open');
-    if (type === 'quarterly') populateQuarterlyForm();
-    if (type === 'roster') populateRosterForm();
-    if (type === 'exits') populateExitsForm();
-    setTimeout(()=>modal.querySelector('input:not([readonly]):not([disabled]),textarea:not([disabled]),select:not([disabled]),button')?.focus(),50);
-  }
-  function closeForm(type){ $(`${type}-modal`).classList.remove('open'); lastFocus?.focus?.(); render(); }
-  function switchTab(tab, panel){ tab.parentElement.querySelectorAll('.form-tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); tab.closest('.form-modal').querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); $(panel).classList.add('active'); }
-  function setDisabled(container, disabled){ container.querySelectorAll('input,textarea,select,button.add-row-btn').forEach(el=>{ if (!el.hasAttribute('readonly')) el.disabled=disabled; }); }
-
-  function populateQuarterlyForm(){
-    const q=currentQuarter, r=reportFor(q), editable=isEditable(q);
-    $('qr-modal-meta').textContent = `${q} · ${QINFO[q].period} · ${STATUS[statusOf(q)] || statusOf(q)}`;
-    $('qr-readonly-banner').style.display = editable ? 'none' : 'flex';
-    $('qr-quarter-display').value = `${q} — ${QINFO[q].period}`;
-    $('qr-persons-quarter').value = r.persons_quarter ?? '';
-    $('qr-persons-ytd').value = calcPersonsYTD(q);
-    $('qr-persons-total').value = r.persons_total ?? '';
-    $('qr-data-source').value = r.data_source_note || '';
-    $('qr-signatory').value = r.signatory_name || '';
-    $('qr-sig-date').value = r.signatory_date || '';
-    $('qr-narrative-text').value = r.narrative_text || '';
-    $('qr-narrative-name').value = r.narrative_submitted_by || r.signatory_name || '';
-    $('qr-narrative-date').value = r.narrative_date || r.signatory_date || '';
-    renderDemoGrid(q); renderEthnicity(q); renderLanguage(q); renderScope(q); renderReviewSummary();
-    setDisabled($('quarterly-modal'), !editable);
-    $('qr-submit-btn').disabled = !editable;
-    attachAutosave('quarterly');
-    updateDemoValidationNote();
-  }
-  function renderDemoGrid(q){
-    const r=reportFor(q), editable=isEditable(q);
-    $('demo-grid').innerHTML = `<div class="demo-cell header">Age Group</div><div class="demo-cell header">Qtr Male</div><div class="demo-cell header">Qtr Female</div><div class="demo-cell header">Qtr NB/GNC</div><div class="demo-cell header">Qtr Unknown</div><div class="demo-cell header">Qtr Total</div><div class="demo-cell header ytd-header">YTD Male</div><div class="demo-cell header ytd-header">YTD Female</div><div class="demo-cell header ytd-header">YTD NB/GNC</div><div class="demo-cell header ytd-header">YTD Unknown</div><div class="demo-cell header ytd-header">YTD Total</div>` +
-      AGE_BANDS.map(age => {
-        const v = r.demographics_age_gender[age] || {male:0,female:0,nb:0,unk:0};
-        const qt=n(v.male)+n(v.female)+n(v.nb)+n(v.unk);
-        const ym=calcDemoYTD(q,'age',age,'male'), yf=calcDemoYTD(q,'age',age,'female'), yn=calcDemoYTD(q,'age',age,'nb'), yu=calcDemoYTD(q,'age',age,'unk');
-        return `<div class="demo-cell row-label">${age}</div>${['male','female','nb','unk'].map(k=>`<div class="demo-cell"><input type="number" min="0" data-demo-age="${age}" data-demo-key="${k}" value="${n(v[k])}" ${editable?'':'disabled'}></div>`).join('')}<div class="demo-cell auto-calc">${qt}</div><div class="demo-cell ro">${ym}</div><div class="demo-cell ro">${yf}</div><div class="demo-cell ro">${yn}</div><div class="demo-cell ro">${yu}</div><div class="demo-cell ro">${ym+yf+yn+yu}</div>`;
-      }).join('');
-    $('demo-grid').querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{ captureFormToMemory(); renderDemoGrid(q); updateYTDFields(); scheduleAutosave('quarterly'); }));
-  }
-  function renderEthnicity(q){
-    const r=reportFor(q), editable=isEditable(q);
-    $('ethnicity-table').innerHTML = ETHNICITIES.map(k => `<tr><td>${k}</td><td><input type="number" min="0" data-demo-eth="${k}" value="${n(r.demographics_ethnicity[k])}" ${editable?'':'disabled'}></td><td><span class="auto-ytd">${calcDemoYTD(q,'ethnicity',k)}</span></td></tr>`).join('');
-    $('ethnicity-table').querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{ captureFormToMemory(); renderEthnicity(q); updateYTDFields(); scheduleAutosave('quarterly'); }));
-  }
-  function renderLanguage(q){
-    const r=reportFor(q), editable=isEditable(q);
-    $('language-table').innerHTML = LANGUAGES.map(k => `<tr><td>${k}</td><td><input type="number" min="0" data-demo-lang="${k}" value="${n(r.demographics_language[k])}" ${editable?'':'disabled'}></td><td><span class="auto-ytd">${calcDemoYTD(q,'language',k)}</span></td></tr>`).join('');
-    $('language-table').querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{ captureFormToMemory(); renderLanguage(q); updateYTDFields(); scheduleAutosave('quarterly'); }));
-  }
-  function renderScope(q){
-    const r=reportFor(q), editable=isEditable(q);
-    const rows = [
-      ['Program Activity','Active Residents','active_residents','activeResidents',false],['','Residents Served This Quarter','residents_served','residentsServed',false],['','New Intakes','new_intakes','newIntakes',true],
-      ['Occupancy','Bed Nights Available','bed_nights_available','bedNightsAvail',true],['','Bed Nights Occupied','bed_nights_occupied','bedNightsOcc',true],
-      ['Housing Outcomes','Permanent Housing Exits','ph_exits','phExits',true],['','Average Days to PH','avg_days_to_ph','avgDaysToPH',false],
-      ['Services','Supportive Services Engaged','supp_services_engaged','suppServicesEngaged',false],['','Income Increase','income_increase','incomeIncrease',false],['','Income Maintained','income_maintained','incomeMaintained',false],
-      ['Satisfaction','Satisfied','satisfaction_satisfied','satSatisfied',false],['','Total Responses','satisfaction_total','satTotal',false],
-      ['Non-Permanent Exits','Temporary / Interim Housing','exits_temp_housing','exitsTemp',true],['','Institutional','exits_institutional','exitsInstitutional',true],['','Returned to Homelessness','exits_returned_homeless','exitsHomeless',true],['','Unknown / Left Program','exits_unknown','exitsUnknown',true]
-    ];
-    $('scope-table').innerHTML = `<thead><tr><th>Metric</th><th style="width:120px">This Quarter</th><th style="width:120px">YTD / Note</th></tr></thead><tbody>` + rows.map(([cat,label,col,key,cum],i) => `${cat?`<tr class="cat-header"><td colspan="3">${cat}</td></tr>`:''}<tr><td>${label}</td><td><input type="number" data-scope-col="${col}" min="0" value="${r[col] ?? ''}" ${editable?'':'disabled'}></td><td>${cum?`<span class="auto-ytd">${calcScopeYTD(q,key)}</span>`:'<span class="auto-ytd">Quarter only</span>'}</td></tr>`).join('') + `</tbody>`;
-    $('scope-table').querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{ captureFormToMemory(); renderScope(q); scheduleAutosave('quarterly'); }));
-  }
-  function captureFormToMemory(){
-    const q=currentQuarter; reports[q] = reports[q] || { program_id: program.id, quarter:q, fiscal_year:'FY2025-26', status:'draft' };
-    Object.assign(reports[q], {
-      persons_quarter: valNum('qr-persons-quarter'), persons_ytd: calcPersonsYTD(q), persons_total: valNum('qr-persons-total'),
-      data_source_note:$('qr-data-source').value, signatory_name:$('qr-signatory').value, signatory_date:$('qr-sig-date').value || null,
-      narrative_text:$('qr-narrative-text').value, narrative_submitted_by:$('qr-narrative-name').value, narrative_date:$('qr-narrative-date').value || null,
-      demographics_age_gender: collectAgeGender(), demographics_ethnicity: collectMap('eth'), demographics_language: collectMap('lang')
+    const { error } = await this.sb.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
+      }
     });
-    $('scope-table')?.querySelectorAll('[data-scope-col]').forEach(i => reports[q][i.dataset.scopeCol] = i.value === '' ? null : Number(i.value));
-  }
-  function valNum(id){ const v=$(id)?.value; return v===''||v==null?null:Number(v); }
-  function collectAgeGender(){ const out=blankDemo().ageGender; document.querySelectorAll('[data-demo-age]').forEach(i=>out[i.dataset.demoAge][i.dataset.demoKey]=n(i.value)); return out; }
-  function collectMap(type){ const keys=type==='eth'?ETHNICITIES:LANGUAGES, out={}; keys.forEach(k=>out[k]=0); document.querySelectorAll(type==='eth'?'[data-demo-eth]':'[data-demo-lang]').forEach(i=>out[type==='eth'?i.dataset.demoEth:i.dataset.demoLang]=n(i.value)); return out; }
-  function updateYTDFields(){ $('qr-persons-ytd').value = calcPersonsYTD(currentQuarter); updateDemoValidationNote(); }
-  function updateDemoValidationNote(){
-    const errs = validateDemographics(currentQuarter);
-    $('demo-validation-note').innerHTML = errs.length ? `<span style="color:var(--red)">${errs.map(e=>esc(e.message)).join('<br>')}</span>` : `<span style="color:var(--green)">Demographic totals match quarter and YTD persons served.</span>`;
-  }
 
-  async function saveQuarterly(manual=false){
-    if (!isEditable(currentQuarter)) return;
-    captureFormToMemory(); setSaveState('qr','Saving...');
-    const q=currentQuarter, r=reports[q];
-    const payload = { program_id:program.id, quarter:q, fiscal_year:'FY2025-26', status:r.status || 'draft',
-      signatory_name:r.signatory_name, signatory_date:r.signatory_date, persons_quarter:r.persons_quarter, persons_ytd:calcPersonsYTD(q), persons_total:r.persons_total, data_source_note:r.data_source_note,
-      demographics_age_gender:r.demographics_age_gender, demographics_ethnicity:r.demographics_ethnicity, demographics_language:r.demographics_language,
-      active_residents:r.active_residents, residents_served:r.residents_served, unduplicated_ytd:calcPersonsYTD(q), new_intakes:r.new_intakes, bed_nights_available:r.bed_nights_available, bed_nights_occupied:r.bed_nights_occupied,
-      ph_exits:r.ph_exits, avg_days_to_ph:r.avg_days_to_ph, six_month_placements:r.six_month_placements, six_month_housed:r.six_month_housed, twelve_month_placements:r.twelve_month_placements, twelve_month_housed:r.twelve_month_housed,
-      supp_services_engaged:r.supp_services_engaged, income_increase:r.income_increase, income_maintained:r.income_maintained, satisfaction_satisfied:r.satisfaction_satisfied, satisfaction_total:r.satisfaction_total,
-      exits_temp_housing:r.exits_temp_housing, exits_institutional:r.exits_institutional, exits_returned_homeless:r.exits_returned_homeless, exits_unknown:r.exits_unknown,
-      narrative_text:r.narrative_text, narrative_submitted_by:r.narrative_submitted_by, narrative_date:r.narrative_date, updated_at:new Date().toISOString()
+    if (error) {
+      errorEl.textContent = error.message || 'The login link could not be sent.';
+      return;
+    }
+    errorEl.style.color = '#2D7A4F';
+    errorEl.textContent = 'Check your email for a secure login link.';
+  },
+
+  async ensureProfile() {
+    const { data, error } = await this.sb.rpc('ensure_my_profile');
+    if (error) throw error;
+    this.profile = Array.isArray(data) ? data[0] : data;
+
+    const { data: programs, error: pErr } = await this.sb.from('programs').select('*').eq('name','Holloway Interim Housing Program').limit(1);
+    if (pErr) throw pErr;
+    this.program = programs?.[0] || null;
+    if (!this.program) throw new Error('Holloway program not found.');
+  },
+
+  isAdmin() { return this.profile?.role === 'city_admin' || this.profile?.access_type === 'city_admin'; },
+  canEdit() {
+    if (this.isAdmin()) return false;
+    const status = this.bundleStatus(this.currentQuarter);
+    return ['incomplete','draft','revision_requested','returned'].includes(status);
+  },
+
+  async logout() {
+    await this.sb.auth.signOut();
+    location.reload();
+  },
+
+  async loadAll() {
+    const pid = this.program.id;
+
+    const [reports, rosters, bundles, exits, approved, activity] = await Promise.all([
+      this.sb.from('quarterly_reports').select('*').eq('program_id', pid).eq('fiscal_year', this.fiscalYear),
+      this.sb.from('client_rosters').select('*').eq('program_id', pid).eq('fiscal_year', this.fiscalYear),
+      this.sb.from('submission_bundles').select('*').eq('program_id', pid).eq('fiscal_year', this.fiscalYear).order('quarter'),
+      this.sb.from('non_permanent_exits').select('*').eq('program_id', pid).eq('fiscal_year', this.fiscalYear).order('quarter').order('exit_number'),
+      this.isAdmin() ? this.sb.from('approved_users').select('*').order('email') : Promise.resolve({data:[]}),
+      this.sb.from('bundle_status_log').select('*').eq('program_id', pid).eq('fiscal_year', this.fiscalYear).order('created_at', { ascending: false }).then(r => r).catch(() => ({data:[]}))
+    ]);
+
+    if (reports.error) console.warn('reports', reports.error);
+    if (rosters.error) console.warn('rosters', rosters.error);
+    if (bundles.error) console.warn('bundles', bundles.error);
+    if (exits.error) console.warn('exits', exits.error);
+
+    this.data.reports = this.indexByQuarter(reports.data || []);
+    this.data.rosters = this.indexByQuarter(rosters.data || []);
+    this.data.bundles = this.indexByQuarter(bundles.data || []);
+    this.data.exits = exits.data || [];
+    this.data.approvedUsers = approved.data || [];
+    this.data.activity = activity.data || [];
+
+    await this.ensureBundlesExist();
+    this.forceAcceptedHistorical();
+  },
+
+  async ensureBundlesExist() {
+    const pid = this.program.id;
+    for (const q of Object.keys(this.quarters)) {
+      if (!this.data.bundles[q]) {
+        const { data, error } = await this.sb.from('submission_bundles').insert({
+          program_id: pid, quarter: q, fiscal_year: this.fiscalYear,
+          due_date: this.quarters[q].due,
+          bundle_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete',
+          city_review_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete'
+        }).select().single();
+        if (!error) this.data.bundles[q] = data;
+      }
+    }
+  },
+
+  forceAcceptedHistorical() {
+    ['Q1','Q2'].forEach(q => {
+      if (this.data.bundles[q]) {
+        this.data.bundles[q].bundle_status = 'accepted';
+        this.data.bundles[q].city_review_status = 'accepted';
+      }
+      if (this.data.reports[q]) this.data.reports[q].status = 'accepted';
+      if (this.data.rosters[q]) this.data.rosters[q].status = 'accepted';
+    });
+  },
+
+  indexByQuarter(rows) {
+    return rows.reduce((acc, r) => { acc[r.quarter] = r; return acc; }, {});
+  },
+
+  renderUser() {
+    const name = this.profile?.full_name || this.user?.email || 'User';
+    document.getElementById('user-name').textContent = name;
+    document.getElementById('user-avatar').textContent = name.split(/\s+/).map(x => x[0]).join('').slice(0,2).toUpperCase();
+  },
+
+  renderSidebarForRole() {
+    document.getElementById('role-nav-label').textContent = this.isAdmin() ? 'City Admin' : 'Agency Workspace';
+    document.getElementById('nav-review').style.display = this.isAdmin() ? 'flex' : 'none';
+    document.getElementById('nav-access').style.display = this.isAdmin() ? 'flex' : 'none';
+  },
+
+  showView(view) {
+    this.view = view;
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('view-' + view)?.classList.add('active');
+    document.querySelectorAll('.sidebar-item[data-view]').forEach(i => i.classList.toggle('active', i.dataset.view === view));
+    if (view === 'dashboard') this.renderDashboard();
+    if (view === 'quarter') this.renderQuarterDetail();
+    if (view === 'admin-review') this.renderAdminReview();
+    if (view === 'access') this.renderAccessManagement();
+  },
+
+  setQuarter(q) {
+    this.currentQuarter = q;
+    this.renderDeadlineChip();
+    if (this.view === 'admin-review') this.showView('quarter');
+    else this.showView(this.view);
+  },
+
+  renderQuarterButtons() {
+    return `<div class="quarter-selector">
+      <span class="quarter-selector-label">Quarter</span>
+      ${Object.keys(this.quarters).map(q => {
+        const st = this.bundleStatus(q);
+        return `<button class="q-btn ${st} ${q===this.currentQuarter?'active':''}" data-quarter="${q}">${q} ${this.statusSymbol(st)}</button>`;
+      }).join('')}
+    </div>`;
+  },
+
+  bindQuarterButtons(container=document) {
+    container.querySelectorAll('[data-quarter]').forEach(btn => btn.addEventListener('click', () => this.setQuarter(btn.dataset.quarter)));
+  },
+
+  bundleStatus(q) {
+    const b = this.data.bundles[q];
+    return b?.city_review_status || b?.bundle_status || (['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete');
+  },
+
+  statusSymbol(st) {
+    if (st === 'accepted') return '✓';
+    if (st === 'submitted' || st === 'resubmitted') return '●';
+    if (st === 'revision_requested' || st === 'returned') return '!';
+    return '';
+  },
+
+  statusBadge(st) {
+    const cls = st === 'accepted' ? 'green' : (st === 'revision_requested' || st === 'returned' || st === 'voided') ? 'red' : (st === 'submitted' || st === 'resubmitted') ? 'navy' : 'amber';
+    const label = (st || 'incomplete').replaceAll('_',' ');
+    return `<span class="badge badge-${cls}">${this.escape(label)}</span>`;
+  },
+
+  quarterLocked(q=this.currentQuarter) {
+    return this.bundleStatus(q) === 'accepted' || this.bundleStatus(q) === 'voided' || this.isAdmin();
+  },
+
+  renderDeadlineChip() {
+    const chip = document.getElementById('deadline-chip');
+    const q = this.currentQuarter;
+    if (this.bundleStatus(q) === 'accepted') { chip.style.display = 'none'; return; }
+    const due = new Date(this.quarters[q].due + 'T12:00:00');
+    const now = new Date();
+    const days = Math.ceil((due - now) / 86400000);
+    chip.style.display = 'inline-flex';
+    chip.className = 'deadline-chip' + (days <= 3 ? ' red' : days <= 14 ? ' amber' : '');
+    chip.textContent = days >= 0 ? `${q} due in ${days} day${days===1?'':'s'}` : `${q} overdue`;
+  },
+
+  renderDashboard() {
+    const el = document.getElementById('view-dashboard');
+    const q = this.currentQuarter;
+    el.innerHTML = `
+      <div class="page-header">
+        <div><div class="page-title">${this.isAdmin() ? 'City Admin Dashboard' : 'Agency Reporting Workspace'}</div>
+        <div class="page-subtitle">Holloway Interim Housing Program · Contract Year: October 1, 2025 – September 30, 2026</div></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost btn-sm" id="btn-print-current">Print / Save PDF</button>
+          <button class="btn btn-gold" data-open="quarterly">${this.bundleStatus(q)==='accepted'?'View Report':'Start / Continue Report'}</button>
+        </div>
+      </div>
+      ${this.renderQuarterButtons()}
+      ${this.renderQuarterContext(q)}
+      <div class="kpi-row">${this.renderKpis(q)}</div>
+      <div class="content-grid">
+        <div>${this.renderReadinessPanel(q)}</div>
+        <div>${this.renderGoalProgress(q)}${this.renderActivityLog(q)}</div>
+      </div>`;
+    this.bindQuarterButtons(el);
+    el.querySelector('[data-open="quarterly"]').addEventListener('click', () => this.openForm('quarterly'));
+    el.querySelector('#btn-print-current').addEventListener('click', () => this.printReport(q));
+  },
+
+  renderQuarterContext(q) {
+    const report = this.data.reports[q] || {};
+    const scope = this.reportScope(q);
+    return `<div class="notice navy">
+      <div aria-hidden="true">📌</div>
+      <div><strong>${q} · ${this.quarters[q].period}</strong><br>
+      Status: ${this.statusBadge(this.bundleStatus(q))} &nbsp; Due: ${this.formatDate(this.quarters[q].due)} &nbsp; 
+      YTD persons served: <strong>${report.persons_ytd ?? this.calcPersonsYtd(q)}</strong> &nbsp; 
+      Occupancy: <strong>${this.percent(scope.bedNightsOcc, scope.bedNightsAvail)}</strong></div>
+    </div>`;
+  },
+
+  renderKpis(q) {
+    const r = this.data.reports[q] || {};
+    const s = this.reportScope(q);
+    const ytd = r.persons_ytd ?? this.calcPersonsYtd(q);
+    return [
+      ['Persons Served', ytd ?? '—', `${r.persons_quarter ?? '—'} this quarter`, 'gold'],
+      ['Occupancy', this.percent(s.bedNightsOcc, s.bedNightsAvail), `${s.bedNightsOcc ?? '—'} / ${s.bedNightsAvail ?? '—'} bed nights`, 'green'],
+      ['PH Exits YTD', this.calcScopeYtd(q, 'phExits') ?? 0, `${s.phExits ?? 0} this quarter`, 'navy'],
+      ['Bundle Status', this.escape((this.bundleStatus(q)||'incomplete').replaceAll('_',' ')), `Due ${this.formatDate(this.quarters[q].due)}`, 'amber']
+    ].map(k => `<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join('');
+  },
+
+  renderReadinessPanel(q) {
+    const readiness = this.readiness(q);
+    const allGreen = readiness.every(x => x.ok);
+    return `<div class="section-label">Submission Readiness — ${q}</div>
+      <div class="card"><div class="card-body">
+        ${readiness.map(item => `<div class="readiness-row">
+          <div class="readiness-left"><span class="status-icon" aria-hidden="true">${item.ok?'✅':item.started?'⚠':'⚪'}</span><div><strong>${item.label}</strong><br><span style="font-size:12px;color:var(--gray-400);">${item.detail}</span></div></div>
+          ${item.action ? `<button class="btn btn-ghost btn-sm" data-open="${item.action}">Open</button>` : ''}
+        </div>`).join('')}
+        <button class="btn btn-gold" id="btn-submit-bundle" ${allGreen && !this.quarterLocked(q) ? '' : 'disabled'}>Submit Quarter to City</button>
+        ${!allGreen ? `<p class="field-hint" style="margin-top:8px;">Complete all three reporting components before submitting the quarter.</p>` : ''}
+      </div></div>`;
+  },
+
+  readiness(q) {
+    const r = this.data.reports[q];
+    const roster = this.data.rosters[q];
+    const exits = this.data.exits.filter(e => e.quarter === q);
+    return [
+      { label:'Quarterly Program Report', ok: !!r && this.reportLooksComplete(q), started: !!r, detail: this.reportLooksComplete(q) ? 'Ready' : (r ? 'Missing required fields or validation issues' : 'Not started'), action:'quarterly' },
+      { label:'Client Roster', ok: !!roster && !!roster.unique_clients && !!roster.period_start && !!roster.period_end, started: !!roster, detail: roster ? `${roster.unique_clients || 0} unique clients` : 'Not uploaded/entered', action:'roster' },
+      { label:'Non-Permanent Exit Detail', ok: exits.length > 0 || this.data.bundles[q]?.no_exits === true || ['accepted'].includes(this.bundleStatus(q)), started: exits.length > 0, detail: exits.length ? `${exits.length} exit row(s)` : 'Enter exits or mark no exits', action:'exits' }
+    ];
+  },
+
+  reportLooksComplete(q) {
+    const r = this.data.reports[q];
+    if (!r) return false;
+    if (r.persons_quarter === null || r.persons_quarter === undefined) return false;
+    const d = this.demographicTotals(q);
+    return d.qAge === Number(r.persons_quarter || 0) && d.qEth === Number(r.persons_quarter || 0) && d.qLang === Number(r.persons_quarter || 0);
+  },
+
+  renderGoalProgress(q) {
+    const ph = this.calcScopeYtd(q,'phExits') || 0;
+    const persons = this.calcPersonsYtd(q) || 0;
+    const pct = Math.min(100, Math.round((ph / Math.max(1, Math.round(persons * .30))) * 100));
+    return `<div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><div class="card-title">Annual Goal Progress</div><span class="badge badge-gray">Through ${q}</span></div>
+      <div class="card-body">
+        <div class="progress-item"><div class="progress-meta"><span>PH Exits vs. 30% benchmark</span><strong>${ph}</strong></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+        <p class="field-hint">Benchmark is informational and based on industry context; small numbers should be interpreted with care.</p>
+      </div>
+    </div>`;
+  },
+
+  renderActivityLog(q) {
+    const rows = (this.data.activity || []).filter(a => a.quarter === q).slice(0,5);
+    return `<div class="card"><div class="card-header"><div class="card-title">Activity Log</div></div><div class="card-body">
+      ${rows.length ? rows.map(r => `<div style="border-left:3px solid var(--gold);padding-left:10px;margin-bottom:10px;font-size:12.5px;">
+        <strong>${this.escape((r.status || '').replaceAll('_',' '))}</strong><br>${this.formatDateTime(r.created_at)} ${r.note ? '· ' + this.escape(r.note) : ''}
+      </div>`).join('') : '<p class="field-hint">No activity has been recorded for this quarter yet.</p>'}
+    </div></div>`;
+  },
+
+  renderQuarterDetail() {
+    const el = document.getElementById('view-quarter');
+    const q = this.currentQuarter;
+    el.innerHTML = `
+      <div class="page-header">
+        <div><div class="page-title">Quarter Detail</div><div class="page-subtitle">Review or manage details for the selected quarter.</div></div>
+        <button class="btn btn-ghost btn-sm" id="btn-print-quarter">Print / Save PDF</button>
+      </div>
+      ${this.renderQuarterButtons()}
+      ${this.renderQuarterContext(q)}
+      <div class="kpi-row">${this.renderKpis(q)}</div>
+      ${this.renderReadinessPanel(q)}
+      ${this.isAdmin() ? this.renderAdminActionCard(q) : ''}`;
+    this.bindQuarterButtons(el);
+    el.querySelector('#btn-print-quarter').addEventListener('click', () => this.printReport(q));
+    el.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => this.openForm(b.dataset.open)));
+    this.bindAdminActionButtons(el);
+  },
+
+  renderAdminReview() {
+    const el = document.getElementById('view-admin-review');
+    const reviewable = Object.keys(this.quarters).map(q => ({ q, b:this.data.bundles[q] || {} }))
+      .filter(x => ['submitted','resubmitted','revision_requested','returned','accepted'].includes(this.bundleStatus(x.q)));
+    el.innerHTML = `<div class="page-header"><div><div class="page-title">City Admin Review Queue</div><div class="page-subtitle">Review Holloway submissions, request revisions, accept, or void a bundle.</div></div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Quarterly Bundles</div><button class="btn btn-ghost btn-sm" id="btn-refresh-admin">Refresh</button></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <table class="svc-table"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revision Count</th><th>Actions</th></tr></thead>
+        <tbody>${reviewable.map(({q,b}) => `<tr><td><strong>${q}</strong></td><td>${this.quarters[q].period}</td><td>${this.statusBadge(this.bundleStatus(q))}</td><td>${this.formatDateTime(b.submitted_at || b.resubmitted_at)}</td><td>${b.revision_count || 0}</td>
+          <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" data-q="${q}" data-admin-action="view">View</button>
+            <button class="btn btn-gold btn-sm" data-q="${q}" data-admin-action="accept">Accept</button>
+            <button class="btn btn-ghost btn-sm" data-q="${q}" data-admin-action="revise">Request Revisions</button>
+            <button class="btn btn-danger btn-sm" data-q="${q}" data-admin-action="void">Void</button>
+          </div></td></tr>`).join('')}</tbody></table>
+      </div></div>`;
+    el.querySelector('#btn-refresh-admin').addEventListener('click', async () => { await this.loadAll(); this.renderAdminReview(); });
+    this.bindAdminActionButtons(el);
+  },
+
+  renderAdminActionCard(q) {
+    const b = this.data.bundles[q] || {};
+    return `<div class="card" style="margin-top:18px;">
+      <div class="card-header"><div class="card-title">City Review & Acceptance</div>${this.statusBadge(this.bundleStatus(q))}</div>
+      <div class="card-body">
+        <div class="field-group" style="margin-bottom:14px;"><label class="field-label" for="admin-review-notes">City Review Notes</label>
+          <textarea class="field-textarea" id="admin-review-notes" placeholder="Add review notes or revision request details.">${this.escape(b.city_review_notes || '')}</textarea></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-gold" data-q="${q}" data-admin-action="accept">Accept Quarter</button>
+          <button class="btn btn-ghost" data-q="${q}" data-admin-action="revise">Request Revisions</button>
+          <button class="btn btn-danger" data-q="${q}" data-admin-action="void">Void Submission</button>
+          <button class="btn btn-ghost" data-q="${q}" data-admin-action="saveNotes">Save Notes</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  bindAdminActionButtons(root) {
+    root.querySelectorAll('[data-admin-action]').forEach(btn => {
+      btn.addEventListener('click', () => this.handleAdminAction(btn.dataset.adminAction, btn.dataset.q));
+    });
+  },
+
+  async handleAdminAction(action, q) {
+    if (action === 'view') { this.currentQuarter = q; this.showView('quarter'); return; }
+    if (action === 'saveNotes') { await this.saveReviewNotes(q); return; }
+
+    const labels = { accept:'accept this quarter and lock the bundle', revise:'request revisions and reopen the bundle to agency users', void:'void this submission while keeping an audit record' };
+    this.confirm(`This will ${labels[action]}. Continue?`, async () => {
+      if (action === 'accept') await this.updateBundleStatus(q, 'accepted');
+      if (action === 'revise') await this.updateBundleStatus(q, 'revision_requested', true);
+      if (action === 'void') await this.updateBundleStatus(q, 'voided');
+    });
+  },
+
+  async saveReviewNotes(q) {
+    const notes = document.getElementById('admin-review-notes')?.value || '';
+    const b = await this.ensureBundle(q);
+    const { error } = await this.sb.from('submission_bundles').update({ city_review_notes: notes }).eq('id', b.id);
+    if (error) alert(error.message);
+    else { await this.loadAll(); this.renderQuarterDetail(); }
+  },
+
+  async updateBundleStatus(q, status, incrementRevision=false) {
+    const b = await this.ensureBundle(q);
+    const notes = document.getElementById('admin-review-notes')?.value || b.city_review_notes || '';
+    const payload = {
+      bundle_status: status,
+      city_review_status: status,
+      city_review_notes: notes,
+      reviewed_by: this.profile.id,
+      reviewed_at: new Date().toISOString()
     };
-    const { data, error } = await sb.from('quarterly_reports').upsert(payload,{onConflict:'program_id,quarter,fiscal_year'}).select().single();
-    if (error) { setSaveState('qr','Save failed'); if(manual) alert(error.message); return; }
-    reports[q]=data; await ensureBundle(q); setSaveState('qr','Saved just now'); if(manual) render();
-  }
-  function setSaveState(prefix,msg){ const el=$(`${prefix}-save-state`); if(el) el.textContent = `· ${msg}`; }
-  function scheduleAutosave(type){ clearTimeout(autosaveTimers[type]); autosaveTimers[type] = setTimeout(()=> type==='quarterly' ? saveQuarterly() : type==='roster' ? saveRoster() : saveExits(), 1200); }
-  function attachAutosave(type){ const modal=$(`${type}-modal`); modal.querySelectorAll('input,textarea,select').forEach(el=>{ el.onblur=()=>scheduleAutosave(type); el.oninput=()=>{ setSaveState(type==='quarterly'?'qr':type, 'Unsaved changes'); }; }); }
-
-  function validateReport(q, show=true){
-    const r=reportFor(q); const errs=[];
-    if (!n(r.persons_quarter)) errs.push({field:'qr-persons-quarter', message:'Persons served this quarter is required.'});
-    if (!r.signatory_name) errs.push({field:'qr-signatory', message:'Signatory name is required.'});
-    if (!r.signatory_date) errs.push({field:'qr-sig-date', message:'Signatory date is required.'});
-    if (!r.narrative_text) errs.push({field:'qr-narrative-text', message:'Narrative is required.'});
-    if (n(r.bed_nights_occupied) > n(r.bed_nights_available) && n(r.bed_nights_available)>0) errs.push({field:null, message:'Bed nights occupied cannot exceed bed nights available.'});
-    if (n(r.satisfaction_satisfied) > n(r.satisfaction_total) && n(r.satisfaction_total)>0) errs.push({field:null, message:'Satisfied responses cannot exceed total responses.'});
-    errs.push(...validateDemographics(q));
-    if (show) showErrors(errs);
-    return errs;
-  }
-  function validateDemographics(q){
-    const r=reportFor(q), pq=n(r.persons_quarter), py=calcPersonsYTD(q);
-    const ageQ = Object.values(r.demographics_age_gender).reduce((s,v)=>s+n(v.male)+n(v.female)+n(v.nb)+n(v.unk),0);
-    const ethQ = Object.values(r.demographics_ethnicity).reduce((s,v)=>s+n(v),0);
-    const langQ = Object.values(r.demographics_language).reduce((s,v)=>s+n(v),0);
-    const ageY = AGE_BANDS.reduce((s,a)=>s+calcDemoYTD(q,'age',a,'male')+calcDemoYTD(q,'age',a,'female')+calcDemoYTD(q,'age',a,'nb')+calcDemoYTD(q,'age',a,'unk'),0);
-    const ethY = ETHNICITIES.reduce((s,e)=>s+calcDemoYTD(q,'ethnicity',e),0);
-    const langY = LANGUAGES.reduce((s,l)=>s+calcDemoYTD(q,'language',l),0);
-    const errs=[]; if (pq && ageQ !== pq) errs.push({field:null,message:`Age/gender quarter total (${ageQ}) must equal persons served this quarter (${pq}).`}); if (pq && ethQ !== pq) errs.push({field:null,message:`Ethnicity quarter total (${ethQ}) must equal persons served this quarter (${pq}).`}); if (pq && langQ !== pq) errs.push({field:null,message:`Language quarter total (${langQ}) must equal persons served this quarter (${pq}).`});
-    if (py && ageY !== py) errs.push({field:null,message:`Age/gender YTD total (${ageY}) must equal persons served YTD (${py}).`}); if (py && ethY !== py) errs.push({field:null,message:`Ethnicity YTD total (${ethY}) must equal persons served YTD (${py}).`}); if (py && langY !== py) errs.push({field:null,message:`Language YTD total (${langY}) must equal persons served YTD (${py}).`});
-    return errs;
-  }
-  function showErrors(errs){
-    document.querySelectorAll('.field-group.invalid').forEach(g=>{g.classList.remove('invalid'); g.querySelector('.field-error').textContent='';});
-    errs.forEach(e=>{ if(!e.field) return; const input=$(e.field); const g=input?.closest('.field-group'); if(g){ g.classList.add('invalid'); const er=g.querySelector('.field-error'); if(er) er.textContent=e.message; }});
-    const chip=$('error-chip'); chip.style.display = errs.length ? 'block' : 'none'; chip.textContent = `${errs.length} field${errs.length===1?'':'s'} need attention →`;
-  }
-  function focusFirstError(){ const el=document.querySelector('.field-group.invalid input,.field-group.invalid textarea,.field-group.invalid select'); el?.scrollIntoView({behavior:'smooth',block:'center'}); el?.focus(); }
-
-  async function submitComponent(type){
-    if (type==='quarterly') { const errs=validateReport(currentQuarter,true); if(errs.length){ focusFirstError(); return; } await saveQuarterly(true); }
-    if (type==='roster') await saveRoster(true);
-    if (type==='exits') await saveExits(true);
-    alert('Component marked complete. Submit the full quarter from the readiness panel when all components are ready.');
-    closeForm(type); render();
-  }
-  async function submitBundle(){
-    const q=currentQuarter;
-    if (!confirm(`${['revision_requested','returned'].includes(statusOf(q))?'Resubmit':'Submit'} ${q} to the City for review?`)) return;
-    await saveQuarterly();
-    const bundle = await ensureBundle(q);
-    const nextStatus = ['revision_requested','returned'].includes(statusOf(q)) ? 'resubmitted' : 'submitted';
-    const { error } = await sb.from('submission_bundles').update({ bundle_status:nextStatus, city_review_status:nextStatus, submitted_at:new Date().toISOString(), resubmitted_at:nextStatus==='resubmitted'?new Date().toISOString():bundles[q]?.resubmitted_at, resubmitted_by:nextStatus==='resubmitted'?profile.id:bundles[q]?.resubmitted_by }).eq('id', bundle.id);
+    if (status === 'accepted') payload.accepted_at = new Date().toISOString();
+    if (status === 'revision_requested') {
+      payload.returned_at = new Date().toISOString();
+      payload.revision_count = (b.revision_count || 0) + (incrementRevision ? 1 : 0);
+    }
+    const { error } = await this.sb.from('submission_bundles').update(payload).eq('id', b.id);
     if (error) { alert(error.message); return; }
-    await logStatus(bundle.id,nextStatus,'Submitted by agency');
-    await refresh();
-  }
+    await this.logStatus(q, status, notes);
+    await this.loadAll();
+    this.showView(this.view);
+  },
 
-  async function ensureBundle(q){
-    if (bundles[q]?.id) return bundles[q];
-    const payload={program_id:program.id, quarter:q, fiscal_year:'FY2025-26', due_date:QINFO[q].due, bundle_status:'incomplete', city_review_status:'incomplete'};
-    const { data, error } = await sb.from('submission_bundles').upsert(payload,{onConflict:'program_id,quarter,fiscal_year'}).select().single();
-    if (error) throw error; bundles[q]=data; return data;
-  }
-  async function logStatus(bundleId,status,note){ try { await sb.from('bundle_status_log').insert({bundle_id:bundleId,status,actor_id:profile.id,note}); } catch(e) { console.warn('status log skipped', e.message); } }
+  async ensureBundle(q) {
+    if (this.data.bundles[q]?.id) return this.data.bundles[q];
+    const { data, error } = await this.sb.from('submission_bundles').upsert({
+      program_id: this.program.id, quarter: q, fiscal_year: this.fiscalYear,
+      due_date: this.quarters[q].due,
+      bundle_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete',
+      city_review_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete'
+    }, { onConflict: 'program_id,quarter,fiscal_year' }).select().single();
+    if (error) throw error;
+    this.data.bundles[q] = data;
+    return data;
+  },
 
-  function populateRosterForm(){
-    const q=currentQuarter, r=rosters[q]||{}, editable=isEditable(q); $('roster-modal-meta').textContent=`${q} · ${QINFO[q].period}`; $('roster-start').value=r.period_start||''; $('roster-end').value=r.period_end||''; $('roster-unique').value=r.unique_clients??''; $('roster-enroll').value=r.enrollments??''; $('roster-households').value=r.households??''; $('roster-notes').value=r.notes||''; setDisabled($('roster-modal'),!editable); attachAutosave('roster');
-  }
-  async function saveRoster(manual=false){
-    if(!isEditable(currentQuarter)) return; setSaveState('roster','Saving...');
-    const q=currentQuarter, file=$('roster-file')?.files?.[0]; let file_path=rosters[q]?.file_path, file_name=rosters[q]?.file_name;
-    if(file){ file_path=`${program.id}/${q}/${Date.now()}_${file.name}`; file_name=file.name; const up=await sb.storage.from('hmis-rosters').upload(file_path,file,{upsert:true}); if(up.error){ setSaveState('roster','Upload failed'); if(manual) alert(up.error.message); return; } }
-    const payload={program_id:program.id, quarter:q, fiscal_year:'FY2025-26', file_path, file_name, period_start:$('roster-start').value||null, period_end:$('roster-end').value||null, unique_clients:valNum('roster-unique'), enrollments:valNum('roster-enroll'), households:valNum('roster-households'), notes:$('roster-notes').value, status:'uploaded', uploaded_by:profile.id};
-    const {data,error}=await sb.from('client_rosters').upsert(payload,{onConflict:'program_id,quarter,fiscal_year'}).select().single();
-    if(error){ setSaveState('roster','Save failed'); if(manual) alert(error.message); return; } rosters[q]=data; await ensureBundle(q); setSaveState('roster','Saved just now');
-  }
+  async logStatus(q, status, note='') {
+    try {
+      await this.sb.from('bundle_status_log').insert({
+        program_id: this.program.id, bundle_id: this.data.bundles[q]?.id,
+        quarter: q, fiscal_year: this.fiscalYear, status, actor_id: this.profile.id, note
+      });
+    } catch (_) {}
+  },
 
-  function populateExitsForm(){ renderExitsTable(); setDisabled($('exits-modal'),!isEditable(currentQuarter)); attachAutosave('exits'); }
-  function renderExitsTable(){
-    const q=currentQuarter, rows=exits.filter(e=>e.quarter===q);
-    $('exits-tbody').innerHTML = rows.map(e => exitRow(e,true)).join('');
-  }
-  function exitRow(e,historical=false){
-    return `<tr class="${historical?'historical':'new-exit-row'}"><td>${e.exit_number||''}</td><td>${e.quarter||currentQuarter}</td><td>${e.exit_type||''}</td><td>${e.voluntary_involuntary||''}</td><td>${esc(e.reason_for_exit||'')}</td><td>${esc(e.interim_program_name||'')}</td><td>${esc(e.interim_program_reason||'')}</td><td>${esc(e.return_context||'')}</td><td>${e.staff_followup||''}</td><td>${esc(e.additional_notes||'')}</td></tr>`;
-  }
-  function addExitRow(){
-    const idx=document.querySelectorAll('#exits-tbody .new-exit-row').length+1;
-    const tr=document.createElement('tr'); tr.className='new-exit-row'; tr.innerHTML=`<td>new</td><td>${currentQuarter}</td><td><select><option>Temporary / Interim Housing</option><option>Institutional Setting</option><option>Returned to Homelessness</option><option>Unknown / Left Program</option></select></td><td><select><option>Voluntary</option><option>Involuntary</option><option>Unknown</option></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><select><option>Yes</option><option>No</option><option>No response</option></select></td><td><input type="text"></td>`; $('exits-tbody').appendChild(tr);
-  }
-  async function saveExits(manual=false){
-    if(!isEditable(currentQuarter)) return; setSaveState('exits','Saving...');
-    const rows=[...document.querySelectorAll('#exits-tbody .new-exit-row')]; if(!rows.length){ setSaveState('exits','Saved just now'); return; }
-    const group=crypto.randomUUID(); let maxNum=Math.max(0,...exits.filter(e=>e.quarter===currentQuarter).map(e=>n(e.exit_number)));
-    for(const row of rows){ const selects=row.querySelectorAll('select'), inputs=row.querySelectorAll('input'); const payload={program_id:program.id,quarter:currentQuarter,fiscal_year:'FY2025-26',submission_group_id:group,exit_number:++maxNum,exit_type:selects[0]?.value,voluntary_involuntary:selects[1]?.value,reason_for_exit:inputs[0]?.value,interim_program_name:inputs[1]?.value,interim_program_reason:inputs[2]?.value,return_context:inputs[3]?.value,staff_followup:selects[2]?.value,additional_notes:inputs[4]?.value,submitted_by:profile.id}; const {error}=await sb.from('non_permanent_exits').insert(payload); if(error){ setSaveState('exits','Save failed'); if(manual) alert(error.message); return; } }
-    await loadAll(); setSaveState('exits','Saved just now'); renderExitsTable();
-  }
+  renderAccessManagement() {
+    const el = document.getElementById('view-access');
+    if (!this.isAdmin()) { el.innerHTML = '<div class="notice red">You do not have access to this section.</div>'; return; }
+    el.innerHTML = `<div class="page-header"><div><div class="page-title">Access Management</div><div class="page-subtitle">Manage approved Holloway portal users.</div></div></div>
+      <div class="card" style="margin-bottom:18px;"><div class="card-header"><div class="card-title">Add or Update User</div></div><div class="card-body">
+        <div class="form-row"><div class="field-group"><label class="field-label required">Email</label><input class="field-input" id="au-email" type="email"></div><div class="field-group"><label class="field-label required">Full Name</label><input class="field-input" id="au-name"></div></div>
+        <div class="form-row three"><div class="field-group"><label class="field-label">Organization</label><input class="field-input" id="au-org" value="Ascencia"></div>
+        <div class="field-group"><label class="field-label">Access Type</label><select class="field-select" id="au-access"><option value="agency_reporter">Agency Reporter</option><option value="agency_editor">Agency Editor</option><option value="agency_signer">Agency Signer</option><option value="viewer">Viewer</option><option value="city_admin">City Admin</option></select></div>
+        <div class="field-group"><label class="field-label">Status</label><select class="field-select" id="au-active"><option value="true">Active</option><option value="false">Inactive</option></select></div></div>
+        <button class="btn btn-gold" id="btn-save-user">Save User</button><span id="au-msg" style="font-size:12px;margin-left:10px;color:var(--gray-600);"></span>
+      </div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Approved Users</div><button class="btn btn-ghost btn-sm" id="btn-refresh-users">Refresh</button></div><div class="card-body" style="overflow-x:auto;">
+      <table class="svc-table"><thead><tr><th>Email</th><th>Name</th><th>Organization</th><th>Access</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        ${(this.data.approvedUsers || []).map(u => `<tr><td>${this.escape(u.email)}</td><td>${this.escape(u.full_name)}</td><td>${this.escape(u.organization)}</td><td>${this.escape(u.access_type || u.role)}</td><td>${u.active ? 'Active' : 'Inactive'}</td>
+        <td><button class="btn btn-ghost btn-sm" data-edit-user="${this.escape(u.email)}">Edit</button></td></tr>`).join('')}
+      </tbody></table></div></div>`;
+    el.querySelector('#btn-save-user').addEventListener('click', () => this.saveApprovedUser());
+    el.querySelector('#btn-refresh-users').addEventListener('click', async () => { await this.loadAll(); this.renderAccessManagement(); });
+    el.querySelectorAll('[data-edit-user]').forEach(b => b.addEventListener('click', () => this.fillUserForm(b.dataset.editUser)));
+  },
 
-  function renderReviewSummary(){ const errs=validateReport(currentQuarter,false); $('review-summary').innerHTML = errs.length ? `<span style="color:var(--red)">${errs.length} issue(s) need attention before this report can be marked complete.</span>` : `<span style="color:var(--green)">Quarterly Program Report is ready.</span>`; $('review-checklist').innerHTML = (errs.length?errs:[{message:'All required fields are complete.'}]).map(e=>`<li class="readiness-item"><span>${errs.length?'⚠':'✅'} ${esc(e.message)}</span></li>`).join(''); }
+  fillUserForm(email) {
+    const u = this.data.approvedUsers.find(x => x.email === email);
+    if (!u) return;
+    document.getElementById('au-email').value = u.email || '';
+    document.getElementById('au-name').value = u.full_name || '';
+    document.getElementById('au-org').value = u.organization || '';
+    document.getElementById('au-access').value = u.access_type || u.role || 'agency_reporter';
+    document.getElementById('au-active').value = String(u.active !== false);
+  },
 
-  function renderReviewQueue(){
-    const tbody=$('review-tbody'); if(!tbody) return;
-    tbody.innerHTML = ['Q1','Q2','Q3','Q4'].map(q => {
-      const b=bundles[q]||{}, st=statusOf(q), notes=b.city_review_notes||'';
-      return `<tr><td><strong>${q}</strong><br><span class="field-hint">${QINFO[q].period}</span></td><td>${qStatusBadge(st)}</td><td>${b.submitted_at?fmtDate(b.submitted_at.slice(0,10)):'—'}</td><td>${n(b.revision_count)}</td><td><textarea class="field-textarea" style="min-height:54px" id="review-notes-${q}" placeholder="City review notes">${esc(notes)}</textarea></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="App.setQuarter('${q}');App.showView('dashboard')">View</button><button class="btn btn-gold btn-sm" onclick="App.adminAction('${q}','accepted')">Accept</button><button class="btn btn-ghost btn-sm" onclick="App.adminAction('${q}','revision_requested')">Request Revisions</button><button class="btn btn-red btn-sm" onclick="App.adminAction('${q}','voided')">Void</button></div></td></tr>`;
-    }).join('');
-  }
-  async function adminAction(q, action){
-    if(!isAdmin()) return; const b=await ensureBundle(q); const notes=$(`review-notes-${q}`)?.value || '';
-    const msg = action==='accepted' ? `Accept ${q}? This will lock the quarter.` : action==='revision_requested' ? `Request revisions for ${q}? This will reopen it for agency edits.` : `Void ${q}? This keeps an audit record but removes it from active review.`;
-    if(!confirm(msg)) return;
-    const payload={bundle_status:action, city_review_status:action, city_review_notes:notes, reviewed_by:profile.id, reviewed_at:new Date().toISOString()};
-    if(action==='revision_requested'){ payload.returned_at=new Date().toISOString(); payload.revision_count=n(b.revision_count)+1; }
-    if(action==='accepted'){ payload.accepted_at=new Date().toISOString(); }
-    const {error}=await sb.from('submission_bundles').update(payload).eq('id',b.id); if(error){ alert(error.message); return; }
-    if(action==='accepted') await sb.from('quarterly_reports').update({status:'accepted',reviewed_by:profile.id,reviewed_at:new Date().toISOString()}).eq('program_id',program.id).eq('quarter',q).eq('fiscal_year','FY2025-26');
-    await logStatus(b.id,action,notes); await refresh();
-  }
+  async saveApprovedUser() {
+    const email = document.getElementById('au-email').value.trim().toLowerCase();
+    const full_name = document.getElementById('au-name').value.trim();
+    const organization = document.getElementById('au-org').value.trim() || 'Ascencia';
+    const access_type = document.getElementById('au-access').value;
+    const active = document.getElementById('au-active').value === 'true';
+    if (!email || !full_name) { document.getElementById('au-msg').textContent = 'Email and name are required.'; return; }
+    const role = access_type === 'city_admin' ? 'city_admin' : 'reporter';
+    const program_id = access_type === 'city_admin' ? null : this.program.id;
+    const { error } = await this.sb.from('approved_users').upsert({ email, full_name, organization, access_type, role, active, program_id });
+    if (error) document.getElementById('au-msg').textContent = error.message;
+    else { document.getElementById('au-msg').textContent = 'Saved.'; await this.loadAll(); this.renderAccessManagement(); }
+  },
 
-  async function loadApprovedUsers(){
-    const tbody=$('approved-users-tbody'); if(!tbody) return; tbody.innerHTML='<tr><td colspan="6">Loading…</td></tr>';
-    const {data,error}=await sb.from('approved_users').select('*').order('email'); if(error){ tbody.innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`; return; }
-    approvedUsers=data||[]; tbody.innerHTML=approvedUsers.map(u=>`<tr><td>${esc(u.email)}</td><td>${esc(u.full_name||'')}</td><td>${esc(u.organization||'')}</td><td>${esc(u.access_type||u.role)}</td><td>${u.active?'Active':'Inactive'}</td><td><button class="btn btn-ghost btn-sm" onclick="App.editApprovedUser('${esc(u.email)}')">Edit</button></td></tr>`).join('');
-  }
-  function editApprovedUser(email){ const u=approvedUsers.find(x=>x.email===email); if(!u)return; $('admin-user-email').value=u.email; $('admin-user-name').value=u.full_name||''; $('admin-user-org').value=u.organization||''; $('admin-user-access-type').value=u.access_type||u.role||'agency_reporter'; $('admin-user-active').value=String(u.active); }
-  function clearAccessForm(){ ['admin-user-email','admin-user-name'].forEach(id=>$(id).value=''); $('admin-user-org').value='Ascencia'; $('admin-user-access-type').value='agency_reporter'; $('admin-user-active').value='true'; $('access-message').textContent=''; }
-  async function saveApprovedUser(){
-    const email=$('admin-user-email').value.trim().toLowerCase(), access=$('admin-user-access-type').value; if(!email||!$('admin-user-name').value.trim()){ $('access-message').textContent='Email and full name are required.'; return; }
-    const payload={email, full_name:$('admin-user-name').value.trim(), organization:$('admin-user-org').value.trim(), role:access==='city_admin'?'city_admin':'reporter', access_type:access, active:$('admin-user-active').value==='true', program_id:access==='city_admin'?null:program.id};
-    const {error}=await sb.from('approved_users').upsert(payload,{onConflict:'email'}); if(error){ $('access-message').textContent=error.message; return; } $('access-message').textContent='User saved.'; clearAccessForm(); await loadApprovedUsers();
-  }
+  openForm(type) {
+    this.focusReturn = document.activeElement;
+    if (type === 'quarterly') this.renderQuarterlyForm();
+    if (type === 'roster') this.renderRosterForm();
+    if (type === 'exits') this.renderExitsForm();
+    document.getElementById('modal-' + type).classList.add('open');
+    const first = document.getElementById('modal-' + type).querySelector('input,textarea,select,button');
+    setTimeout(() => first?.focus(), 50);
+  },
 
-  document.addEventListener('change', e => { if(e.target.id==='roster-file'){ $('roster-file-title').textContent = e.target.files?.[0]?.name ? `✓ ${e.target.files[0].name}` : 'Click to select your HMIS export file'; scheduleAutosave('roster'); } });
-  document.addEventListener('keydown', e => { if(e.key==='Escape') ['quarterly','roster','exits'].forEach(t=>closeForm(t)); });
+  closeForm(type) {
+    document.getElementById('modal-' + type).classList.remove('open');
+    this.focusReturn?.focus?.();
+  },
 
-  return { init, login, logout, refresh, showView, setQuarter, openForm, closeForm, switchTab, saveQuarterly, submitComponent, submitBundle, focusFirstError, addExitRow, adminAction, loadApprovedUsers, saveApprovedUser, editApprovedUser, clearAccessForm };
-})();
-window.addEventListener('load', App.init);
+  switchTab(id) {
+    document.querySelectorAll('.form-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === id));
+  },
+
+  renderQuarterlyForm() {
+    const q = this.currentQuarter;
+    document.getElementById('qr-meta').innerHTML = `${q} · ${this.quarters[q].period} · ${this.statusBadge(this.bundleStatus(q))}`;
+    this.renderCoverForm(q);
+    this.renderScopeForm(q);
+    this.renderNarrativeForm(q);
+    this.renderReviewForm(q);
+    this.bindQuarterlyInputs();
+    this.updateReadOnlyStates('quarterly');
+  },
+
+  reportScope(q) {
+    const r = this.data.reports[q] || {};
+    const scope = {};
+    Object.entries(this.scopeMap).forEach(([key,col]) => scope[key] = r[col]);
+    return scope;
+  },
+
+  renderCoverForm(q) {
+    const r = this.data.reports[q] || {};
+    const personsYtd = r.persons_ytd ?? this.calcPersonsYtd(q);
+    const d = r.demographics_age_gender || this.blankAgeGender();
+    const eth = this.normalizeEthnicity(r.demographics_ethnicity || {});
+    const lang = this.normalizeLanguage(r.demographics_language || {});
+    document.getElementById('qr-cover-body').innerHTML = `
+      <div class="notice navy"><div aria-hidden="true">ℹ️</div><div><strong>${q} Cover Page</strong><br>Enter current-quarter values. YTD values are calculated from accepted prior quarters plus this quarter.</div></div>
+      <div class="form-section"><div class="form-section-title">Program Information</div>
+        <div class="form-row"><div class="field-group"><label class="field-label">Agency</label><input class="field-input" value="Ascencia" readonly></div><div class="field-group"><label class="field-label">Program</label><input class="field-input" value="Holloway Interim Housing Program" readonly></div></div>
+        <div class="form-row"><div class="field-group"><label class="field-label">Reporting Quarter</label><input class="field-input" value="${q} · ${this.quarters[q].period}" readonly></div><div class="field-group"><label class="field-label">Contract Year</label><input class="field-input" value="October 1, 2025 – September 30, 2026" readonly></div></div>
+      </div>
+      <div class="form-section"><div class="form-section-title">New, Unduplicated Persons Served</div>
+        <div class="form-row three">
+          ${this.field('qr-persons-quarter','This Quarter (WeHo)',r.persons_quarter,'number',true,'New, unduplicated WeHo clients this quarter')}
+          ${this.field('qr-persons-ytd','Year-to-Date (WeHo)',personsYtd,'number',false,'Auto-calculated from Q1 through selected quarter',true)}
+          ${this.field('qr-persons-total','Total Project',r.persons_total,'number',false,'Total project participants, if different from WeHo count')}
+        </div>
+        ${this.field('qr-data-source','Data Source',r.data_source_note || '', 'text', false, 'Example: Data was collected through enrollment via HMIS')}
+      </div>
+      <div class="form-section"><div class="form-section-title">Demographics — Age & Gender</div>${this.renderAgeGenderGrid(q,d)}</div>
+      <div class="form-row">
+        <div class="field-group"><label class="field-label">Ethnicity</label>${this.renderSimpleDemoTable('eth', this.ethnicityKeys, eth, q)}</div>
+        <div class="field-group"><label class="field-label">Household Language</label>${this.renderSimpleDemoTable('lang', this.languageKeys, lang, q)}</div>
+      </div>
+      <div class="form-section" style="margin-top:20px;"><div class="form-section-title">Signatory</div>
+        <div class="form-row three">
+          ${this.field('qr-signatory','Name / Title',r.signatory_name || 'Laura Duncan, Executive Director','text',true)}
+          ${this.field('qr-sig-date','Date',r.signatory_date || '','date',true)}
+          <div class="field-group"><label class="field-label required">E-Signature Confirmation</label><select class="field-select" id="qr-sig-confirm" required><option value="">— Select —</option><option selected>I confirm this is my electronic signature</option></select><span class="field-error">Required.</span></div>
+        </div>
+      </div>`;
+  },
+
+  field(id,label,value='',type='text',required=false,hint='',readonly=false) {
+    return `<div class="field-group" data-field-group="${id}"><label class="field-label ${required?'required':''}" for="${id}">${label}</label><input class="field-input" id="${id}" type="${type}" value="${this.escape(value ?? '')}" ${required?'required':''} ${readonly?'readonly':''}><span class="field-error">Required or invalid.</span>${hint?`<span class="field-hint">${hint}</span>`:''}</div>`;
+  },
+
+  renderAgeGenderGrid(q, data) {
+    let html = `<div class="demo-grid">
+      <div class="demo-cell header">Age Group</div><div class="demo-cell header">Qtr Male</div><div class="demo-cell header">Qtr Female</div><div class="demo-cell header">Qtr NB/GNC</div><div class="demo-cell header">Qtr Unknown</div><div class="demo-cell header">Qtr Total</div>
+      <div class="demo-cell header ytd-head">YTD Male</div><div class="demo-cell header ytd-head">YTD Female</div><div class="demo-cell header ytd-head">YTD NB/GNC</div><div class="demo-cell header ytd-head">YTD Unknown</div><div class="demo-cell header ytd-head">YTD Total</div>`;
+    this.ageBands.forEach(age => {
+      const row = data[age] || {male:0,female:0,nb:0,unk:0};
+      const y = this.calcAgeGenderYtd(q, age, row);
+      const total = this.sumDemoRow(row);
+      html += `<div class="demo-cell row-label">${age}</div>
+        ${['male','female','nb','unk'].map(k => `<div class="demo-cell"><input type="number" min="0" class="demo-input" data-demo="age" data-age="${age}" data-key="${k}" value="${row[k]||0}"></div>`).join('')}
+        <div class="demo-cell ro" data-age-total="${age}">${total}</div>
+        <div class="demo-cell ro">${y.male}</div><div class="demo-cell ro">${y.female}</div><div class="demo-cell ro">${y.nb}</div><div class="demo-cell ro">${y.unk}</div><div class="demo-cell ro">${this.sumDemoRow(y)}</div>`;
+    });
+    return html + `</div><p class="field-hint" style="margin-top:8px;">Quarter demographics must equal Persons Served This Quarter. YTD demographics are calculated and read-only.</p>`;
+  },
+
+  renderSimpleDemoTable(prefix, keys, values, q) {
+    return `<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;"><table class="svc-table"><thead><tr><th>Category</th><th style="width:80px;text-align:right;">Qtr</th><th style="width:80px;text-align:right;">YTD</th></tr></thead><tbody>
+      ${keys.map(k => {
+        const ytd = prefix === 'eth' ? this.calcSimpleDemoYtd(q,'demographics_ethnicity',k,values[k]||0) : this.calcSimpleDemoYtd(q,'demographics_language',k,values[k]||0);
+        return `<tr><td>${k}</td><td><input type="number" min="0" class="demo-input" data-demo="${prefix}" data-key="${k}" value="${values[k]||0}"></td><td style="text-align:right;font-weight:800;color:var(--navy);">${ytd}</td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  },
+
+  renderScopeForm(q) {
+    const s = this.reportScope(q);
+    const rows = [
+      ['Current Operations','activeResidents','Active Residents','quarter','Snapshot at end of quarter.'],
+      ['Current Operations','residentsServed','Residents Served During Quarter','quarter','Current quarter only.'],
+      ['Cumulative Activity','newIntakes','New Intakes','ytd','Cumulative across contract year.'],
+      ['Occupancy','bedNightsAvail','Bed Nights Available','ytd','Cumulative across contract year.'],
+      ['Occupancy','bedNightsOcc','Bed Nights Occupied','ytd','Cannot exceed available bed nights.'],
+      ['Housing Outcomes','phExits','Permanent Housing Exits','ytd','Cumulative across contract year.'],
+      ['Housing Outcomes','avgDaysToPH','Average Days to PH','quarter','Quarter-specific average.'],
+      ['Services','suppServicesEngaged','Supportive Services Engaged','quarter','Current quarter only unless source report defines otherwise.'],
+      ['Income','incomeIncrease','Income Increased','quarter','Current quarter only.'],
+      ['Income','incomeMaintained','Income Maintained','quarter','Current quarter only.'],
+      ['Satisfaction','satSatisfied','Satisfied Responses','quarter','Cannot exceed total responses.'],
+      ['Satisfaction','satTotal','Total Survey Responses','quarter','Current quarter only.'],
+      ['Non-Permanent Exits','exitsTemp','Temporary / Interim Housing','ytd','Cumulative across contract year.'],
+      ['Non-Permanent Exits','exitsInstitutional','Institutional Setting','ytd','Cumulative across contract year.'],
+      ['Non-Permanent Exits','exitsHomeless','Returned to Homelessness','ytd','Cumulative across contract year.'],
+      ['Non-Permanent Exits','exitsUnknown','Unknown / Left Program','ytd','Cumulative across contract year.']
+    ];
+    let last = '';
+    document.getElementById('qr-scope-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">ℹ️</div><div><strong>Scope of Services</strong><br>YTD fields are calculated only for cumulative metrics. Snapshot and service fields remain quarter-specific.</div></div>
+      <table class="svc-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th><th>Notes</th></tr></thead><tbody>
+      ${rows.map(([cat,key,label,mode,hint]) => {
+        const header = cat !== last ? (last=cat, `<tr class="cat-header"><td colspan="4">${cat}</td></tr>`) : '';
+        const ytd = mode === 'ytd' ? this.calcScopeYtd(q,key,s[key] || 0) : 'Quarter only';
+        return `${header}<tr><td>${label}</td><td><input type="number" min="0" id="scope-${key}" data-scope="${key}" value="${s[key] ?? ''}"></td><td>${ytd}</td><td class="field-hint">${hint}</td></tr>`;
+      }).join('')}</tbody></table>`;
+  },
+
+  renderNarrativeForm(q) {
+    const r = this.data.reports[q] || {};
+    document.getElementById('qr-narrative-body').innerHTML = `<div class="form-section">
+      <div class="form-section-title">Narrative</div>
+      <div class="notice navy"><div aria-hidden="true">✍️</div><div>Keep the narrative to approximately one page. Include successes, challenges, staffing updates, and explanations of major variance from goals.</div></div>
+      <div class="field-group" data-field-group="qr-narrative-text"><label class="field-label required">Narrative</label><textarea class="field-textarea" id="qr-narrative-text" required>${this.escape(r.narrative_text || '')}</textarea><span class="field-error">Narrative is required before submission.</span></div>
+      <div class="form-row"><div class="field-group"><label class="field-label required">Submitted By</label><input class="field-input" id="qr-narrative-name" required value="${this.escape(r.narrative_submitted_by || r.signatory_name || 'Laura Duncan, Executive Director')}"></div><div class="field-group"><label class="field-label required">Date</label><input type="date" class="field-input" id="qr-narrative-date" required value="${r.narrative_date || ''}"></div></div>
+    </div>`;
+  },
+
+  renderReviewForm(q) {
+    const readiness = this.readiness(q);
+    document.getElementById('qr-review-body').innerHTML = `<div class="form-section"><div class="form-section-title">Submission Summary</div>
+      ${readiness.map(i => `<div class="readiness-row"><div class="readiness-left"><span aria-hidden="true">${i.ok?'✅':i.started?'⚠':'⚪'}</span><div><strong>${i.label}</strong><br><span class="field-hint">${i.detail}</span></div></div></div>`).join('')}
+      <p class="field-hint" style="margin-top:12px;">All three components should be complete before submitting the quarter to the City.</p>
+    </div>`;
+  },
+
+  bindQuarterlyInputs() {
+    document.querySelectorAll('#modal-quarterly input, #modal-quarterly textarea, #modal-quarterly select').forEach(el => {
+      el.addEventListener('input', () => { this.markDirty('quarterly'); this.recalculateLiveForm(); });
+      el.addEventListener('blur', () => { this.validateField(el); this.autosave('quarterly'); });
+    });
+  },
+
+  recalculateLiveForm() {
+    const qv = Number(document.getElementById('qr-persons-quarter')?.value || 0);
+    const prior = this.priorQuarters(this.currentQuarter).reduce((sum,q) => sum + Number(this.data.reports[q]?.persons_quarter || 0),0);
+    const ytd = prior + qv;
+    const ytdEl = document.getElementById('qr-persons-ytd');
+    if (ytdEl) ytdEl.value = ytd || '';
+    document.querySelectorAll('[data-age-total]').forEach(cell => {
+      const age = cell.dataset.ageTotal;
+      const vals = ['male','female','nb','unk'].map(k => Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0));
+      cell.textContent = vals.reduce((a,b)=>a+b,0);
+    });
+  },
+
+  renderRosterForm() {
+    const q = this.currentQuarter;
+    const r = this.data.rosters[q] || {};
+    document.getElementById('roster-meta').innerHTML = `${q} · ${this.quarters[q].period} · ${this.statusBadge(this.bundleStatus(q))}`;
+    document.getElementById('roster-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">📁</div><div><strong>HMIS Export</strong><br>Upload or summarize the HMIS-generated roster for clients active during the quarter.</div></div>
+      <div class="form-section"><div class="form-section-title">Upload HMIS Export</div>
+        <label class="upload-zone"><input type="file" id="roster-file" accept=".xlsx,.xls,.csv"><div style="font-size:30px;" aria-hidden="true">📁</div><div id="roster-file-label"><strong>Click to select HMIS export</strong><br><span class="field-hint">Accepted: .xlsx, .xls, .csv</span></div></label>
+      </div>
+      <div class="form-section"><div class="form-section-title">Roster Period & Summary</div>
+        <div class="form-row">${this.field('roster-start','Period Start',r.period_start || '','date',true)}${this.field('roster-end','Period End',r.period_end || '','date',true)}</div>
+        <div class="form-row three">${this.field('roster-unique','Unique Clients',r.unique_clients ?? '','number',true)}${this.field('roster-enroll','Enrollments',r.enrollments ?? '','number')}${this.field('roster-households','Households',r.households ?? '','number')}</div>
+        <div class="field-group"><label class="field-label">Notes</label><textarea class="field-textarea" id="roster-notes">${this.escape(r.notes || '')}</textarea></div>
+      </div>`;
+    document.querySelectorAll('#modal-roster input, #modal-roster textarea').forEach(el => {
+      el.addEventListener('input', () => this.markDirty('roster'));
+      el.addEventListener('blur', () => { this.validateField(el); this.autosave('roster'); });
+    });
+    document.getElementById('roster-file').addEventListener('change', e => {
+      const file = e.target.files?.[0];
+      if (file) document.getElementById('roster-file-label').innerHTML = `<strong>Selected:</strong> ${this.escape(file.name)}`;
+      this.markDirty('roster');
+    });
+    this.updateReadOnlyStates('roster');
+  },
+
+  renderExitsForm() {
+    const q = this.currentQuarter;
+    const rows = this.data.exits.filter(e => e.quarter === q);
+    document.getElementById('exits-meta').innerHTML = `${q} · ${this.quarters[q].period} · ${this.statusBadge(this.bundleStatus(q))}`;
+    document.getElementById('exits-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">🚪</div><div><strong>Non-Permanent Exit</strong><br>A non-permanent exit means a participant left the program without a confirmed permanent housing destination. Include one row for each applicable exit.</div></div>
+      <div style="overflow-x:auto;"><table class="svc-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Receiving Program</th><th>Follow-up</th><th>Notes</th></tr></thead><tbody id="exits-tbody">
+      ${rows.map((e,i)=>this.exitRowHtml(e,i+1,true)).join('')}
+      </tbody></table></div>
+      <div class="notice amber" style="margin-top:14px;"><div aria-hidden="true">ℹ️</div><div><strong>Involuntary vs. Voluntary</strong><br>Voluntary exits are initiated by the participant. Involuntary exits are initiated by the program due to safety, eligibility, or program participation issues.</div></div>`;
+    this.updateReadOnlyStates('exits');
+  },
+
+  exitRowHtml(e={}, n=1, existing=false) {
+    return `<tr data-exit-row="${existing ? e.id : ''}">
+      <td>${n}</td>
+      <td><select class="field-select exit-type"><option></option>${['Temporary / Interim Housing','Institutional Setting','Returned to Homelessness','Unknown / Left Program'].map(x=>`<option ${e.exit_type===x?'selected':''}>${x}</option>`).join('')}</select></td>
+      <td><select class="field-select exit-vol"><option></option>${['Voluntary','Involuntary','Unknown'].map(x=>`<option ${e.voluntary_involuntary===x?'selected':''}>${x}</option>`).join('')}</select></td>
+      <td><input class="field-input exit-reason" value="${this.escape(e.reason_for_exit || '')}"></td>
+      <td><input class="field-input exit-program" value="${this.escape(e.interim_program_name || '')}"></td>
+      <td><select class="field-select exit-followup"><option></option>${['Yes','No','No response'].map(x=>`<option ${e.staff_followup===x?'selected':''}>${x}</option>`).join('')}</select></td>
+      <td><input class="field-input exit-notes" value="${this.escape(e.additional_notes || '')}"></td>
+    </tr>`;
+  },
+
+  addExitDraftRow() {
+    const tbody = document.getElementById('exits-tbody');
+    tbody.insertAdjacentHTML('beforeend', this.exitRowHtml({}, tbody.children.length + 1, false));
+    this.markDirty('exits');
+  },
+
+  updateReadOnlyStates(type) {
+    const locked = this.quarterLocked();
+    const modal = document.getElementById('modal-' + type);
+    modal.querySelectorAll('input,textarea,select').forEach(el => {
+      if (el.id === 'roster-file') el.disabled = locked;
+      else if (!el.readOnly) el.disabled = locked;
+    });
+    modal.querySelectorAll('.btn-gold, #btn-add-exit').forEach(btn => btn.disabled = locked);
+  },
+
+  markDirty(type) {
+    this.dirty[type] = true;
+    const el = document.getElementById(`${type === 'quarterly' ? 'qr' : type}-save-state`);
+    if (el) el.textContent = 'Unsaved changes';
+    clearTimeout(this.saveTimers[type]);
+    this.saveTimers[type] = setTimeout(() => this.autosave(type), 12000);
+  },
+
+  autosave(type) {
+    if (this.quarterLocked() || !this.dirty[type]) return;
+    if (type === 'quarterly') this.saveQuarterly('auto');
+    if (type === 'roster') this.saveRoster('auto');
+    if (type === 'exits') this.saveExits('auto');
+  },
+
+  async saveQuarterly(mode='manual') {
+    if (this.quarterLocked()) return;
+    const q = this.currentQuarter;
+    this.setSaveState('qr','Saving...');
+    const scope = {};
+    Object.keys(this.scopeMap).forEach(key => scope[this.scopeMap[key]] = this.numVal('scope-' + key));
+
+    const payload = {
+      program_id: this.program.id, quarter: q, fiscal_year: this.fiscalYear, status: 'draft',
+      signatory_name: this.val('qr-signatory'), signatory_date: this.val('qr-sig-date') || null,
+      persons_quarter: this.numVal('qr-persons-quarter'), persons_ytd: this.numVal('qr-persons-ytd'), persons_total: this.numVal('qr-persons-total'),
+      data_source_note: this.val('qr-data-source'), demographics_age_gender: this.collectAgeGender(),
+      demographics_ethnicity: this.collectSimpleDemo('eth'), demographics_language: this.collectSimpleDemo('lang'),
+      narrative_text: this.val('qr-narrative-text'), narrative_submitted_by: this.val('qr-narrative-name'), narrative_date: this.val('qr-narrative-date') || null,
+      updated_at: new Date().toISOString(), ...scope
+    };
+    const { data, error } = await this.sb.from('quarterly_reports').upsert(payload, { onConflict:'program_id,quarter,fiscal_year' }).select().single();
+    if (error) { this.setSaveState('qr','Save failed'); console.error(error); return; }
+    this.data.reports[q] = data;
+    this.dirty.quarterly = false;
+    this.setSaveState('qr', mode === 'auto' ? 'Autosaved just now' : 'Saved just now');
+    this.showView(this.view);
+  },
+
+  async saveRoster(mode='manual') {
+    if (this.quarterLocked()) return;
+    const q = this.currentQuarter;
+    this.setSaveState('roster','Saving...');
+    let file_path = this.data.rosters[q]?.file_path || null;
+    let file_name = this.data.rosters[q]?.file_name || null;
+    const file = document.getElementById('roster-file')?.files?.[0];
+    if (file) {
+      const path = `${this.program.id}/${q}/${Date.now()}-${file.name}`;
+      const upload = await this.sb.storage.from('hmis-rosters').upload(path, file, { upsert:true });
+      if (upload.error) { this.setSaveState('roster','Upload failed'); alert(upload.error.message); return; }
+      file_path = path; file_name = file.name;
+    }
+    const payload = {
+      program_id:this.program.id, quarter:q, fiscal_year:this.fiscalYear,
+      file_path, file_name, period_start:this.val('roster-start') || null, period_end:this.val('roster-end') || null,
+      unique_clients:this.numVal('roster-unique'), enrollments:this.numVal('roster-enroll'), households:this.numVal('roster-households'),
+      notes:this.val('roster-notes'), status:'uploaded', uploaded_by:this.profile.id
+    };
+    const { data, error } = await this.sb.from('client_rosters').upsert(payload, { onConflict:'program_id,quarter,fiscal_year' }).select().single();
+    if (error) { this.setSaveState('roster','Save failed'); alert(error.message); return; }
+    this.data.rosters[q] = data;
+    this.dirty.roster = false;
+    this.setSaveState('roster', mode === 'auto' ? 'Autosaved just now' : 'Saved just now');
+    this.showView(this.view);
+  },
+
+  async saveExits(mode='manual') {
+    if (this.quarterLocked()) return;
+    const q = this.currentQuarter;
+    this.setSaveState('exits','Saving...');
+    const rows = [...document.querySelectorAll('#exits-tbody tr')];
+    const existingIds = rows.map(r => r.dataset.exitRow).filter(Boolean);
+    const currentExisting = this.data.exits.filter(e => e.quarter === q && e.id);
+    for (const old of currentExisting) {
+      if (!existingIds.includes(old.id)) {
+        await this.sb.from('non_permanent_exits').delete().eq('id', old.id);
+      }
+    }
+    let count = 1;
+    for (const row of rows) {
+      const payload = {
+        program_id:this.program.id, quarter:q, fiscal_year:this.fiscalYear,
+        exit_number: count++, exit_type: row.querySelector('.exit-type').value || null,
+        voluntary_involuntary: row.querySelector('.exit-vol').value || null,
+        reason_for_exit: row.querySelector('.exit-reason').value || null,
+        interim_program_name: row.querySelector('.exit-program').value || null,
+        staff_followup: row.querySelector('.exit-followup').value || null,
+        additional_notes: row.querySelector('.exit-notes').value || null,
+        submitted_by:this.profile.id
+      };
+      const id = row.dataset.exitRow;
+      if (id) await this.sb.from('non_permanent_exits').update(payload).eq('id', id);
+      else await this.sb.from('non_permanent_exits').insert(payload);
+    }
+    await this.loadAll();
+    this.dirty.exits = false;
+    this.setSaveState('exits', mode === 'auto' ? 'Autosaved just now' : 'Saved just now');
+    this.renderExitsForm();
+    this.showView(this.view);
+  },
+
+  async submitQuarterlyReport() {
+    const errors = this.validateQuarterly();
+    if (errors.length) { this.showErrorChip(errors.length); this.scrollToFirstError(); return; }
+    await this.saveQuarterly('manual');
+    const { error } = await this.sb.from('quarterly_reports').update({ status:'submitted', submitted_at:new Date().toISOString(), submitted_by:this.profile.id }).eq('program_id',this.program.id).eq('quarter',this.currentQuarter).eq('fiscal_year',this.fiscalYear);
+    if (error) { alert(error.message); return; }
+    await this.ensureBundle(this.currentQuarter);
+    await this.sb.from('submission_bundles').update({
+      bundle_status:'submitted', city_review_status:'submitted', submitted_at:new Date().toISOString()
+    }).eq('id', this.data.bundles[this.currentQuarter].id);
+    await this.logStatus(this.currentQuarter,'submitted','Quarterly report submitted');
+    await this.loadAll();
+    this.closeForm('quarterly');
+    this.showView(this.view);
+  },
+
+  validateField(el) {
+    const group = el.closest('.field-group');
+    if (!group) return true;
+    const invalid = el.required && !el.value;
+    group.classList.toggle('has-error', invalid);
+    return !invalid;
+  },
+
+  validateQuarterly() {
+    const errors = [];
+    document.querySelectorAll('#modal-quarterly [required]').forEach(el => { if (!this.validateField(el)) errors.push(el); });
+    const qPersons = this.numVal('qr-persons-quarter') || 0;
+    const yPersons = this.numVal('qr-persons-ytd') || 0;
+    const d = this.demographicTotalsFromForm();
+    if (d.qAge !== qPersons) errors.push('age');
+    if (d.qEth !== qPersons) errors.push('eth');
+    if (d.qLang !== qPersons) errors.push('lang');
+    if (d.yAge !== yPersons) errors.push('yAge');
+    if ((this.numVal('scope-bedNightsOcc')||0) > (this.numVal('scope-bedNightsAvail')||0)) errors.push('bed');
+    if ((this.numVal('scope-satSatisfied')||0) > (this.numVal('scope-satTotal')||0)) errors.push('survey');
+    return errors;
+  },
+
+  showErrorChip(n) {
+    const chip = document.getElementById('error-chip');
+    chip.textContent = `${n} field${n===1?'':'s'} need attention →`;
+    chip.style.display = 'block';
+  },
+
+  scrollToFirstError() {
+    const el = document.querySelector('.has-error input, .has-error textarea, .has-error select, #modal-quarterly [required]:invalid');
+    if (el) { el.scrollIntoView({behavior:'smooth', block:'center'}); el.focus(); }
+  },
+
+  setSaveState(prefix, text) {
+    const el = document.getElementById(`${prefix}-save-state`);
+    if (el) el.textContent = text;
+  },
+
+  printReport(q=this.currentQuarter) {
+    const r = this.data.reports[q] || {};
+    const s = this.reportScope(q);
+    const roster = this.data.rosters[q] || {};
+    const exits = this.data.exits.filter(e => e.quarter === q);
+    const b = this.data.bundles[q] || {};
+    document.getElementById('print-report').innerHTML = `
+      <div class="print-header"><div class="print-title">Holloway Interim Housing Program</div><div>Quarterly Reporting Summary · ${q} · ${this.quarters[q].period}</div><div>Status: ${(this.bundleStatus(q)||'').replaceAll('_',' ')}</div></div>
+      <div class="print-section"><h2>Cover Page</h2><table class="print-table"><tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Persons Served This Quarter</td><td>${r.persons_quarter ?? ''}</td></tr><tr><td>Persons Served YTD</td><td>${r.persons_ytd ?? this.calcPersonsYtd(q)}</td></tr><tr><td>Data Source</td><td>${this.escape(r.data_source_note || '')}</td></tr><tr><td>Signatory</td><td>${this.escape(r.signatory_name || '')} · ${this.formatDate(r.signatory_date)}</td></tr></table></div>
+      <div class="print-section"><h2>Scope of Services</h2><table class="print-table">${Object.keys(this.scopeMap).map(k => `<tr><td>${this.scopeLabel(k)}</td><td>${s[k] ?? ''}</td></tr>`).join('')}</table></div>
+      <div class="print-section page-break"><h2>Narrative</h2><p>${this.escape(r.narrative_text || 'No narrative provided.')}</p></div>
+      <div class="print-section"><h2>Roster Summary</h2><table class="print-table"><tr><td>Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>Unique Clients</td><td>${roster.unique_clients ?? ''}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
+      <div class="print-section"><h2>Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
+      <div class="print-section"><h2>City Review</h2><p>${this.escape(b.city_review_notes || 'No City review notes.')}</p><p>Generated ${new Date().toLocaleString()}</p></div>`;
+    window.print();
+  },
+
+  confirm(message, onConfirm) {
+    document.getElementById('confirm-message').textContent = message;
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.add('open');
+    const ok = document.getElementById('confirm-ok');
+    ok.onclick = async () => { modal.classList.remove('open'); await onConfirm(); };
+  },
+  closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); },
+
+  priorQuarters(q) {
+    const order = ['Q1','Q2','Q3','Q4'];
+    return order.slice(0, order.indexOf(q));
+  },
+  thruQuarters(q) {
+    const order = ['Q1','Q2','Q3','Q4'];
+    return order.slice(0, order.indexOf(q)+1);
+  },
+  calcPersonsYtd(q) {
+    return this.thruQuarters(q).reduce((sum, qq) => sum + Number(this.data.reports[qq]?.persons_quarter || 0), 0);
+  },
+  calcScopeYtd(q,key,currentOverride=null) {
+    const prior = this.priorQuarters(q).reduce((sum,qq) => sum + Number(this.reportScope(qq)[key] || 0),0);
+    const current = currentOverride !== null ? Number(currentOverride||0) : Number(this.reportScope(q)[key] || 0);
+    return prior + current;
+  },
+  calcAgeGenderYtd(q, age, currentRow=null) {
+    const out = {male:0,female:0,nb:0,unk:0};
+    this.priorQuarters(q).forEach(qq => {
+      const row = this.data.reports[qq]?.demographics_age_gender?.[age] || {};
+      ['male','female','nb','unk'].forEach(k => out[k] += Number(row[k] || 0));
+    });
+    const c = currentRow || this.data.reports[q]?.demographics_age_gender?.[age] || {};
+    ['male','female','nb','unk'].forEach(k => out[k] += Number(c[k] || 0));
+    return out;
+  },
+  calcSimpleDemoYtd(q,col,key,currentVal=0) {
+    const prior = this.priorQuarters(q).reduce((sum,qq) => sum + Number(this.data.reports[qq]?.[col]?.[key] || 0),0);
+    return prior + Number(currentVal || 0);
+  },
+
+  demographicTotals(q) {
+    const r = this.data.reports[q] || {};
+    const age = r.demographics_age_gender || {};
+    const eth = this.normalizeEthnicity(r.demographics_ethnicity || {});
+    const lang = this.normalizeLanguage(r.demographics_language || {});
+    return {
+      qAge: Object.values(age).reduce((s,row)=>s+this.sumDemoRow(row),0),
+      qEth: Object.values(eth).reduce((a,b)=>a+Number(b||0),0),
+      qLang: Object.values(lang).reduce((a,b)=>a+Number(b||0),0)
+    };
+  },
+
+  demographicTotalsFromForm() {
+    const ageRows = this.collectAgeGender();
+    const eth = this.collectSimpleDemo('eth');
+    const lang = this.collectSimpleDemo('lang');
+    const qAge = Object.values(ageRows).reduce((s,row)=>s+this.sumDemoRow(row),0);
+    const qEth = Object.values(eth).reduce((a,b)=>a+Number(b||0),0);
+    const qLang = Object.values(lang).reduce((a,b)=>a+Number(b||0),0);
+    const yAge = this.priorQuarters(this.currentQuarter).reduce((sum,q)=>sum + this.demographicTotals(q).qAge,0) + qAge;
+    return { qAge, qEth, qLang, yAge };
+  },
+
+  collectAgeGender() {
+    const out = this.blankAgeGender();
+    document.querySelectorAll('[data-demo="age"]').forEach(el => {
+      out[el.dataset.age][el.dataset.key] = Number(el.value || 0);
+    });
+    return out;
+  },
+  collectSimpleDemo(prefix) {
+    const out = {};
+    document.querySelectorAll(`[data-demo="${prefix}"]`).forEach(el => out[el.dataset.key] = Number(el.value || 0));
+    return out;
+  },
+  blankAgeGender() {
+    const out = {};
+    this.ageBands.forEach(a => out[a] = {male:0,female:0,nb:0,unk:0});
+    return out;
+  },
+  normalizeEthnicity(obj) {
+    const out = {};
+    this.ethnicityKeys.forEach(k => out[k] = Number(obj[k] || 0));
+    if (obj.Other && !out['Other (Middle Eastern/North African)']) out['Other (Middle Eastern/North African)'] = Number(obj.Other || 0);
+    return out;
+  },
+  normalizeLanguage(obj) {
+    const out = {};
+    this.languageKeys.forEach(k => out[k] = Number(obj[k] || 0));
+    return out;
+  },
+  sumDemoRow(row={}) { return ['male','female','nb','unk'].reduce((s,k)=>s+Number(row[k]||0),0); },
+
+  val(id) { return document.getElementById(id)?.value || ''; },
+  numVal(id) { const v = document.getElementById(id)?.value; return v === '' || v === undefined ? null : Number(v); },
+  percent(n,d) { return d ? `${Math.round((Number(n||0)/Number(d))*100)}%` : '—'; },
+  formatDate(d) { return d ? new Date(d + (String(d).includes('T')?'':'T12:00:00')).toLocaleDateString() : '—'; },
+  formatDateTime(d) { return d ? new Date(d).toLocaleString() : '—'; },
+  escape(s) { return (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+  scopeLabel(k) { return k.replace(/([A-Z])/g,' $1').replace(/^./, c => c.toUpperCase()); }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
 </body>
 </html>
