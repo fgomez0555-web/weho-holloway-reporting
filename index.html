@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Holloway Reporting Portal — City of West Hollywood</title>
+<title>Holloway Interim Housing Program Reporting Portal — City of West Hollywood</title>
 
 <script>
   const SUPABASE_URL = 'https://osilouhgoehyesbastxr.supabase.co';
@@ -225,6 +225,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .print-kpi .label { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#6B6660; font-weight:800; }
 .print-kpi .value { font-size:20px; color:#1B2F5B; font-weight:900; margin-top:2px; }
 .print-footer { margin-top:28px; padding-top:8px; border-top:1px solid #ddd; font-size:10px; color:#666; }
+.print-summary-strip { display:flex; gap:14px; flex-wrap:wrap; border:1px solid #d8d5ce; background:#F7F6F2; border-left:5px solid #C9A24A; border-radius:8px; padding:9px 12px; margin:-8px 0 18px; font-size:11px; color:#3A3733; }
+.print-summary-strip span { margin-right:8px; }
 
 
 
@@ -277,14 +279,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 <body>
 <div id="loading-screen" class="loading-screen">
   <img class="loading-logo-img" src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo" />
-  <p>Loading Holloway Reporting Portal…</p>
+  <p>Loading Holloway Interim Housing Program Reporting Portal…</p>
 </div>
 
 <div id="login-screen" style="display:none;">
   <div class="login-card">
     <div class="login-header">
       <img class="login-logo-img" src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo" />
-      <div class="login-title">Holloway Reporting Portal</div>
+      <div class="login-title">Holloway Interim Housing Program Reporting Portal</div>
       <div class="login-sub">City of West Hollywood · Human Services Division</div>
     </div>
     <div class="login-body">
@@ -304,7 +306,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     <div class="topbar-brand">
       <img class="weho-logo-header" src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo" />
       <div>
-        <div class="brand-program">Holloway Reporting Portal</div>
+        <div class="brand-program">Holloway Interim Housing Program Reporting Portal</div>
         <div class="brand-sub">City of West Hollywood · Human Services</div>
       </div>
     </div>
@@ -1725,10 +1727,15 @@ const App = {
         </div>
       </div>
       <div class="print-kpis">
-        <div class="print-kpi"><div class="label">Persons Served</div><div class="value">${r.persons_quarter ?? ''}</div><div class="label">This quarter</div></div>
-        <div class="print-kpi"><div class="label">Persons Served YTD</div><div class="value">${r.persons_ytd ?? this.calcPersonsYtd(q)}</div><div class="label">Contract year</div></div>
-        <div class="print-kpi"><div class="label">Occupancy</div><div class="value">${occupancy}</div><div class="label">Bed nights</div></div>
-        <div class="print-kpi"><div class="label">PH Exits YTD</div><div class="value">${this.calcScopeYtd(q,'phExits')}</div><div class="label">Contract year</div></div>
+        <div class="print-kpi"><div class="label">New Intakes</div><div class="value">${s.newIntakes ?? 0}</div><div class="label">This quarter</div></div>
+        <div class="print-kpi"><div class="label">Permanent Housing Exits</div><div class="value">${this.calcScopeYtd(q,'phExits')}</div><div class="label">Year-to-date</div></div>
+        <div class="print-kpi"><div class="label">Average Occupancy</div><div class="value">${occupancy}</div><div class="label">Occupied bed nights</div></div>
+        <div class="print-kpi"><div class="label">Service Engagement</div><div class="value">${s.suppServicesEngaged ?? 0}</div><div class="label">Participants engaged</div></div>
+      </div>
+      <div class="print-summary-strip">
+        <span><strong>Unduplicated Persons Served YTD:</strong> ${this.calcPersonsYtd(q)}</span>
+        <span><strong>Reporting Period:</strong> ${this.quarters[q].period}</span>
+        <span><strong>Status:</strong> ${this.escape(status)}</span>
       </div>
       <div class="print-section"><h2>Annual Goals & Progress</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section summarizes progress toward annual program goals and key monitoring measures. Goals should be interpreted with care when counts are small or the contract year is still in progress.</p><table class="print-table print-progress-table"><thead><tr><th>Goal / Measure</th><th>YTD Actual</th><th>Annual Target / Benchmark</th><th>Progress</th><th>Status</th></tr></thead><tbody>${this.annualGoals(q).map(g=>{ const pct=this.goalPercent(g); return `<tr><td><strong>${this.escape(g.name)}</strong><br><span style="font-size:10px;color:#666;">${this.escape(g.desc)}</span></td><td>${this.escape(String(g.actual))}</td><td>${this.escape(String(g.target))}</td><td><div class="print-progress-bar"><div class="print-progress-fill" style="width:${pct}%"></div></div><span style="font-size:10px;">${pct}%</span></td><td>${this.escape(this.goalStatus(g))}</td></tr>`;}).join('')}</tbody></table></div>
       <div class="print-section"><h2>Cover Page</h2><table class="print-table"><tr><th>Field</th><th>Value</th></tr>
@@ -1742,7 +1749,7 @@ const App = {
       <div class="print-section"><h2>Client Movement Summary</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">Roster movement should reconcile as: People at Start + Intakes During Quarter − Exits During Quarter = People at End of Quarter.</p><table class="print-table"><tr><td>Roster Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>People in Program at Start of Quarter</td><td>${roster.start_count ?? ''}</td></tr><tr><td>Intakes During Quarter</td><td>${roster.intakes_count ?? ''}</td></tr><tr><td>Exits During Quarter</td><td>${roster.exits_count ?? ''}</td></tr><tr><td>People in Program at End of Quarter</td><td>${roster.end_count ?? ''}</td></tr><tr><td>Movement Reconciliation</td><td>${this.rosterMovementTies(roster) ? '✓ Movement ties out' : '⚠ Review movement totals'}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
       <div class="print-section page-break"><h2>Non-Permanent Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
       <div class="print-section"><h2>City Review</h2><p>${this.escape(b.city_review_notes || 'No City review notes.')}</p></div>
-      <div class="print-footer"><img class="print-footer-logo" src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo" />Prepared for City of West Hollywood Human Services Division · Holloway Reporting Portal</div>`;
+      <div class="print-footer"><img class="print-footer-logo" src="https://www.governmentjobs.com/AgencyPages/weho/agencyImages/download/weho_white_on_blue.jpg" alt="City of West Hollywood logo" />Prepared for City of West Hollywood Human Services Division · Holloway Interim Housing Program Reporting Portal</div>`;
     window.print();
   },
 
