@@ -189,6 +189,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .print-table td { border:1px solid #ddd; padding:6px; vertical-align:top; }
 .page-break { page-break-before:always; }
 
+.print-cover { display:grid; grid-template-columns: 1.4fr .8fr; gap:18px; align-items:start; margin-bottom:18px; }
+.print-brand { border:1px solid #d8d5ce; border-top:6px solid #1B2F5B; padding:18px; border-radius:8px; }
+.print-meta { border:1px solid #d8d5ce; background:#F7F6F2; padding:14px; border-radius:8px; font-size:11px; }
+.print-kpis { display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin:14px 0 20px; }
+.print-kpi { border:1px solid #d8d5ce; border-radius:8px; padding:10px; }
+.print-kpi .label { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#6B6660; font-weight:800; }
+.print-kpi .value { font-size:20px; color:#1B2F5B; font-weight:900; margin-top:2px; }
+.print-footer { margin-top:28px; padding-top:8px; border-top:1px solid #ddd; font-size:10px; color:#666; }
+
+
 @media (max-width: 980px) {
   .kpi-row { grid-template-columns: 1fr 1fr; }
   .content-grid { grid-template-columns: 1fr; }
@@ -515,7 +525,9 @@ const App = {
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: 'https://fgomez0555-web.github.io/weho-holloway-reporting/'
+        // Dynamic — always returns the user to whichever URL the app is
+        // currently served from (production, staging, or localhost).
+        emailRedirectTo: window.location.origin + window.location.pathname
       }
     });
 
@@ -575,7 +587,6 @@ const App = {
     this.data.activity = activity.data || [];
 
     await this.ensureBundlesExist();
-    this.forceAcceptedHistorical();
   },
 
   async ensureBundlesExist() {
@@ -585,23 +596,14 @@ const App = {
         const { data, error } = await this.sb.from('submission_bundles').insert({
           program_id: pid, quarter: q, fiscal_year: this.fiscalYear,
           due_date: this.quarters[q].due,
-          bundle_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete',
-          city_review_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete'
+          // New bundles always start 'incomplete'. Acceptance must be an
+          // explicit admin action so the audit log captures who/when.
+          bundle_status: 'incomplete',
+          city_review_status: 'incomplete'
         }).select().single();
         if (!error) this.data.bundles[q] = data;
       }
     }
-  },
-
-  forceAcceptedHistorical() {
-    ['Q1','Q2'].forEach(q => {
-      if (this.data.bundles[q]) {
-        this.data.bundles[q].bundle_status = 'accepted';
-        this.data.bundles[q].city_review_status = 'accepted';
-      }
-      if (this.data.reports[q]) this.data.reports[q].status = 'accepted';
-      if (this.data.rosters[q]) this.data.rosters[q].status = 'accepted';
-    });
   },
 
   indexByQuarter(rows) {
@@ -649,12 +651,20 @@ const App = {
   },
 
   bindQuarterButtons(container=document) {
-    container.querySelectorAll('[data-quarter]').forEach(btn => btn.addEventListener('click', () => this.setQuarter(btn.dataset.quarter)));
+    // The Submit Quarter button also carries data-quarter, so exclude
+    // any element that also has data-action — otherwise we'd treat the
+    // submit button as a quarter selector and drop the submit action.
+    container.querySelectorAll('[data-quarter]:not([data-action])').forEach(btn => btn.addEventListener('click', () => this.setQuarter(btn.dataset.quarter)));
+  },
+
+  bindSubmitBundleButton(container=document) {
+    const btn = container.querySelector('[data-action="submit-bundle"]');
+    if (btn) btn.addEventListener('click', () => this.submitBundle(btn.dataset.quarter || this.currentQuarter));
   },
 
   bundleStatus(q) {
     const b = this.data.bundles[q];
-    return b?.city_review_status || b?.bundle_status || (['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete');
+    return b?.city_review_status || b?.bundle_status || 'incomplete';
   },
 
   statusSymbol(st) {
@@ -706,6 +716,7 @@ const App = {
         <div>${this.renderGoalProgress(q)}${this.renderActivityLog(q)}</div>
       </div>`;
     this.bindQuarterButtons(el);
+    this.bindSubmitBundleButton(el);
     el.querySelector('[data-open="quarterly"]').addEventListener('click', () => this.openForm('quarterly'));
     el.querySelector('#btn-print-current').addEventListener('click', () => this.printReport(q));
   },
@@ -743,7 +754,7 @@ const App = {
           <div class="readiness-left"><span class="status-icon" aria-hidden="true">${item.ok?'✅':item.started?'⚠':'⚪'}</span><div><strong>${item.label}</strong><br><span style="font-size:12px;color:var(--gray-400);">${item.detail}</span></div></div>
           ${item.action ? `<button class="btn btn-ghost btn-sm" data-open="${item.action}">Open</button>` : ''}
         </div>`).join('')}
-        <button class="btn btn-gold" id="btn-submit-bundle" ${allGreen && !this.quarterLocked(q) ? '' : 'disabled'}>Submit Quarter to City</button>
+        <button class="btn btn-gold" id="btn-submit-bundle" data-action="submit-bundle" data-quarter="${q}" ${allGreen && !this.quarterLocked(q) ? '' : 'disabled'}>Submit Quarter to City</button>
         ${!allGreen ? `<p class="field-hint" style="margin-top:8px;">Complete all three reporting components before submitting the quarter.</p>` : ''}
       </div></div>`;
   },
@@ -803,6 +814,7 @@ const App = {
       ${this.renderReadinessPanel(q)}
       ${this.isAdmin() ? this.renderAdminActionCard(q) : ''}`;
     this.bindQuarterButtons(el);
+    this.bindSubmitBundleButton(el);
     el.querySelector('#btn-print-quarter').addEventListener('click', () => this.printReport(q));
     el.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => this.openForm(b.dataset.open)));
     this.bindAdminActionButtons(el);
@@ -898,8 +910,10 @@ const App = {
     const { data, error } = await this.sb.from('submission_bundles').upsert({
       program_id: this.program.id, quarter: q, fiscal_year: this.fiscalYear,
       due_date: this.quarters[q].due,
-      bundle_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete',
-      city_review_status: ['Q1','Q2'].includes(q) ? 'accepted' : 'incomplete'
+      // New bundles always start 'incomplete'. Acceptance is an explicit
+      // admin action so the audit log captures who/when.
+      bundle_status: 'incomplete',
+      city_review_status: 'incomplete'
     }, { onConflict: 'program_id,quarter,fiscal_year' }).select().single();
     if (error) throw error;
     this.data.bundles[q] = data;
@@ -1013,8 +1027,7 @@ const App = {
       <div class="form-section"><div class="form-section-title">New, Unduplicated Persons Served</div>
         <div class="form-row three">
           ${this.field('qr-persons-quarter','This Quarter (WeHo)',r.persons_quarter,'number',true,'New, unduplicated WeHo clients this quarter')}
-          ${this.field('qr-persons-ytd','Year-to-Date (WeHo)',personsYtd,'number',false,'Auto-calculated from Q1 through selected quarter',true)}
-          ${this.field('qr-persons-total','Total Project',r.persons_total,'number',false,'Total project participants, if different from WeHo count')}
+          ${this.field('qr-persons-ytd','Year-to-Date (WeHo)',personsYtd,'number',false,'Auto-calculated from accepted prior quarters plus this quarter',true)}
         </div>
         ${this.field('qr-data-source','Data Source',r.data_source_note || '', 'text', false, 'Example: Data was collected through enrollment via HMIS')}
       </div>
@@ -1047,7 +1060,7 @@ const App = {
       html += `<div class="demo-cell row-label">${age}</div>
         ${['male','female','nb','unk'].map(k => `<div class="demo-cell"><input type="number" min="0" class="demo-input" data-demo="age" data-age="${age}" data-key="${k}" value="${row[k]||0}"></div>`).join('')}
         <div class="demo-cell ro" data-age-total="${age}">${total}</div>
-        <div class="demo-cell ro">${y.male}</div><div class="demo-cell ro">${y.female}</div><div class="demo-cell ro">${y.nb}</div><div class="demo-cell ro">${y.unk}</div><div class="demo-cell ro">${this.sumDemoRow(y)}</div>`;
+        <div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="male">${y.male}</div><div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="female">${y.female}</div><div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="nb">${y.nb}</div><div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="unk">${y.unk}</div><div class="demo-cell ro" data-ytd-age-total="${age}">${this.sumDemoRow(y)}</div>`;
     });
     return html + `</div><p class="field-hint" style="margin-top:8px;">Quarter demographics must equal Persons Served This Quarter. YTD demographics are calculated and read-only.</p>`;
   },
@@ -1056,7 +1069,7 @@ const App = {
     return `<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;"><table class="svc-table"><thead><tr><th>Category</th><th style="width:80px;text-align:right;">Qtr</th><th style="width:80px;text-align:right;">YTD</th></tr></thead><tbody>
       ${keys.map(k => {
         const ytd = prefix === 'eth' ? this.calcSimpleDemoYtd(q,'demographics_ethnicity',k,values[k]||0) : this.calcSimpleDemoYtd(q,'demographics_language',k,values[k]||0);
-        return `<tr><td>${k}</td><td><input type="number" min="0" class="demo-input" data-demo="${prefix}" data-key="${k}" value="${values[k]||0}"></td><td style="text-align:right;font-weight:800;color:var(--navy);">${ytd}</td></tr>`;
+        return `<tr><td>${k}</td><td><input type="number" min="0" class="demo-input" data-demo="${prefix}" data-key="${k}" value="${values[k]||0}"></td><td data-ytd-simple="${prefix}" data-key="${k}" style="text-align:right;font-weight:800;color:var(--navy);">${ytd}</td></tr>`;
       }).join('')}</tbody></table></div>`;
   },
 
@@ -1086,7 +1099,7 @@ const App = {
       ${rows.map(([cat,key,label,mode,hint]) => {
         const header = cat !== last ? (last=cat, `<tr class="cat-header"><td colspan="4">${cat}</td></tr>`) : '';
         const ytd = mode === 'ytd' ? this.calcScopeYtd(q,key,s[key] || 0) : 'Quarter only';
-        return `${header}<tr><td>${label}</td><td><input type="number" min="0" id="scope-${key}" data-scope="${key}" value="${s[key] ?? ''}"></td><td>${ytd}</td><td class="field-hint">${hint}</td></tr>`;
+        return `${header}<tr><td>${label}</td><td><input type="number" min="0" id="scope-${key}" data-scope="${key}" value="${s[key] ?? ''}"></td><td ${mode === 'ytd' ? `data-scope-ytd="${key}"` : ''}>${ytd}</td><td class="field-hint">${hint}</td></tr>`;
       }).join('')}</tbody></table>`;
   },
 
@@ -1116,15 +1129,45 @@ const App = {
   },
 
   recalculateLiveForm() {
+    const q = this.currentQuarter;
     const qv = Number(document.getElementById('qr-persons-quarter')?.value || 0);
-    const prior = this.priorQuarters(this.currentQuarter).reduce((sum,q) => sum + Number(this.data.reports[q]?.persons_quarter || 0),0);
-    const ytd = prior + qv;
+    const priorPersons = this.priorQuarters(q).reduce((sum,qq) => sum + Number(this.data.reports[qq]?.persons_quarter || 0),0);
+    const ytd = priorPersons + qv;
     const ytdEl = document.getElementById('qr-persons-ytd');
     if (ytdEl) ytdEl.value = ytd || '';
+
+    // Current-quarter age/gender totals and YTD demographics
     document.querySelectorAll('[data-age-total]').forEach(cell => {
       const age = cell.dataset.ageTotal;
-      const vals = ['male','female','nb','unk'].map(k => Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0));
-      cell.textContent = vals.reduce((a,b)=>a+b,0);
+      const row = {};
+      ['male','female','nb','unk'].forEach(k => {
+        row[k] = Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0);
+      });
+      cell.textContent = this.sumDemoRow(row);
+      const y = this.calcAgeGenderYtd(q, age, row);
+      ['male','female','nb','unk'].forEach(k => {
+        const out = document.querySelector(`[data-ytd-age="${CSS.escape(age)}"][data-ytd-key="${k}"]`);
+        if (out) out.textContent = y[k] || 0;
+      });
+      const total = document.querySelector(`[data-ytd-age-total="${CSS.escape(age)}"]`);
+      if (total) total.textContent = this.sumDemoRow(y);
+    });
+
+    // Ethnicity and language YTD totals
+    document.querySelectorAll('[data-ytd-simple]').forEach(cell => {
+      const prefix = cell.dataset.ytdSimple;
+      const key = cell.dataset.key;
+      const input = document.querySelector(`[data-demo="${prefix}"][data-key="${CSS.escape(key)}"]`);
+      const currentVal = Number(input?.value || 0);
+      const col = prefix === 'eth' ? 'demographics_ethnicity' : 'demographics_language';
+      cell.textContent = this.calcSimpleDemoYtd(q, col, key, currentVal);
+    });
+
+    // Scope YTD totals
+    document.querySelectorAll('[data-scope-ytd]').forEach(cell => {
+      const key = cell.dataset.scopeYtd;
+      const currentVal = Number(document.getElementById(`scope-${key}`)?.value || 0);
+      cell.textContent = this.calcScopeYtd(q, key, currentVal);
     });
   },
 
@@ -1162,6 +1205,13 @@ const App = {
       ${rows.map((e,i)=>this.exitRowHtml(e,i+1,true)).join('')}
       </tbody></table></div>
       <div class="notice amber" style="margin-top:14px;"><div aria-hidden="true">ℹ️</div><div><strong>Involuntary vs. Voluntary</strong><br>Voluntary exits are initiated by the participant. Involuntary exits are initiated by the program due to safety, eligibility, or program participation issues.</div></div>`;
+    // Wire autosave on existing exit-row edits. Without this, typing into
+    // a row never sets the dirty flag and autosave never fires until the
+    // user clicks "Save Exit Detail" manually.
+    document.querySelectorAll('#exits-tbody input, #exits-tbody select').forEach(el => {
+      el.addEventListener('input', () => this.markDirty('exits'));
+      el.addEventListener('change', () => this.markDirty('exits'));
+    });
     this.updateReadOnlyStates('exits');
   },
 
@@ -1180,6 +1230,11 @@ const App = {
   addExitDraftRow() {
     const tbody = document.getElementById('exits-tbody');
     tbody.insertAdjacentHTML('beforeend', this.exitRowHtml({}, tbody.children.length + 1, false));
+    const newRow = tbody.lastElementChild;
+    newRow.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', () => this.markDirty('exits'));
+      el.addEventListener('change', () => this.markDirty('exits'));
+    });
     this.markDirty('exits');
   },
 
@@ -1218,7 +1273,7 @@ const App = {
     const payload = {
       program_id: this.program.id, quarter: q, fiscal_year: this.fiscalYear, status: 'draft',
       signatory_name: this.val('qr-signatory'), signatory_date: this.val('qr-sig-date') || null,
-      persons_quarter: this.numVal('qr-persons-quarter'), persons_ytd: this.numVal('qr-persons-ytd'), persons_total: this.numVal('qr-persons-total'),
+      persons_quarter: this.numVal('qr-persons-quarter'), persons_ytd: this.numVal('qr-persons-ytd'), persons_total: null,
       data_source_note: this.val('qr-data-source'), demographics_age_gender: this.collectAgeGender(),
       demographics_ethnicity: this.collectSimpleDemo('eth'), demographics_language: this.collectSimpleDemo('lang'),
       narrative_text: this.val('qr-narrative-text'), narrative_submitted_by: this.val('qr-narrative-name'), narrative_date: this.val('qr-narrative-date') || null,
@@ -1294,20 +1349,37 @@ const App = {
     this.showView(this.view);
   },
 
+  // Mark the WHOLE bundle as submitted (or 'resubmitted' if a revision was
+  // previously requested). Used by the dashboard/readiness "Submit Quarter
+  // to City" button AND by submitQuarterlyReport after a form-level submit.
+  async submitBundle(q) {
+    q = q || this.currentQuarter;
+    await this.ensureBundle(q);
+    const prior = this.bundleStatus(q);
+    const isResubmit = prior === 'revision_requested' || prior === 'returned';
+    const now = new Date().toISOString();
+    const patch = isResubmit
+      ? { bundle_status:'resubmitted', city_review_status:'resubmitted', resubmitted_at: now }
+      : { bundle_status:'submitted',   city_review_status:'submitted',   submitted_at:   now };
+    const { error } = await this.sb.from('submission_bundles').update(patch).eq('id', this.data.bundles[q].id);
+    if (error) { alert('Could not submit bundle: ' + error.message); return false; }
+    await this.logStatus(q, patch.bundle_status, isResubmit ? 'Resubmitted after revision request' : 'Quarter submitted to City');
+    await this.loadAll();
+    this.showView(this.view);
+    return true;
+  },
+
   async submitQuarterlyReport() {
     const errors = this.validateQuarterly();
     if (errors.length) { this.showErrorChip(errors.length); this.scrollToFirstError(); return; }
     await this.saveQuarterly('manual');
     const { error } = await this.sb.from('quarterly_reports').update({ status:'submitted', submitted_at:new Date().toISOString(), submitted_by:this.profile.id }).eq('program_id',this.program.id).eq('quarter',this.currentQuarter).eq('fiscal_year',this.fiscalYear);
     if (error) { alert(error.message); return; }
-    await this.ensureBundle(this.currentQuarter);
-    await this.sb.from('submission_bundles').update({
-      bundle_status:'submitted', city_review_status:'submitted', submitted_at:new Date().toISOString()
-    }).eq('id', this.data.bundles[this.currentQuarter].id);
-    await this.logStatus(this.currentQuarter,'submitted','Quarterly report submitted');
-    await this.loadAll();
+    // Delegate bundle-status write to submitBundle so the resubmit branch
+    // and error handling stay in one place.
+    const ok = await this.submitBundle(this.currentQuarter);
+    if (!ok) return;
     this.closeForm('quarterly');
-    this.showView(this.view);
   },
 
   validateField(el) {
@@ -1355,15 +1427,55 @@ const App = {
     const roster = this.data.rosters[q] || {};
     const exits = this.data.exits.filter(e => e.quarter === q);
     const b = this.data.bundles[q] || {};
+    const status = (this.bundleStatus(q) || 'incomplete').replaceAll('_',' ');
+    const occupancy = this.percent(s.bedNightsOcc, s.bedNightsAvail);
+
+    const ageRows = this.ageBands.map(age => {
+      const row = r.demographics_age_gender?.[age] || {male:0,female:0,nb:0,unk:0};
+      const y = this.calcAgeGenderYtd(q, age, row);
+      return `<tr><td>${age}</td><td>${row.male||0}</td><td>${row.female||0}</td><td>${row.nb||0}</td><td>${row.unk||0}</td><td>${this.sumDemoRow(row)}</td><td>${this.sumDemoRow(y)}</td></tr>`;
+    }).join('');
+    const eth = this.normalizeEthnicity(r.demographics_ethnicity || {});
+    const ethRows = this.ethnicityKeys.map(k => `<tr><td>${this.escape(k)}</td><td>${eth[k]||0}</td><td>${this.calcSimpleDemoYtd(q,'demographics_ethnicity',k,eth[k]||0)}</td></tr>`).join('');
+    const lang = this.normalizeLanguage(r.demographics_language || {});
+    const langRows = this.languageKeys.map(k => `<tr><td>${this.escape(k)}</td><td>${lang[k]||0}</td><td>${this.calcSimpleDemoYtd(q,'demographics_language',k,lang[k]||0)}</td></tr>`).join('');
+
+    const scopeRows = Object.keys(this.scopeMap).map(k => {
+      const cumulative = ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'].includes(k);
+      const ytd = cumulative ? this.calcScopeYtd(q,k) : 'Quarter only';
+      return `<tr><td>${this.scopeLabel(k)}</td><td>${s[k] ?? ''}</td><td>${ytd}</td></tr>`;
+    }).join('');
+
     document.getElementById('print-report').innerHTML = `
-      <div class="print-header"><div class="print-title">Holloway Interim Housing Program</div><div>Quarterly Reporting Summary · ${q} · ${this.quarters[q].period}</div><div>Status: ${(this.bundleStatus(q)||'').replaceAll('_',' ')}</div></div>
-      <div class="print-section"><h2>Cover Page</h2><table class="print-table"><tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Persons Served This Quarter</td><td>${r.persons_quarter ?? ''}</td></tr><tr><td>Persons Served YTD</td><td>${r.persons_ytd ?? this.calcPersonsYtd(q)}</td></tr><tr><td>Data Source</td><td>${this.escape(r.data_source_note || '')}</td></tr><tr><td>Signatory</td><td>${this.escape(r.signatory_name || '')} · ${this.formatDate(r.signatory_date)}</td></tr></table></div>
-      <div class="print-section"><h2>Scope of Services</h2><table class="print-table">${Object.keys(this.scopeMap).map(k => `<tr><td>${this.scopeLabel(k)}</td><td>${s[k] ?? ''}</td></tr>`).join('')}</table></div>
-      <div class="print-section page-break"><h2>Narrative</h2><p>${this.escape(r.narrative_text || 'No narrative provided.')}</p></div>
-      <div class="print-section"><h2>Roster Summary</h2><table class="print-table"><tr><td>Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>Unique Clients</td><td>${roster.unique_clients ?? ''}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
-      <div class="print-section"><h2>Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
-      <div class="print-section"><h2>City Review</h2><p>${this.escape(b.city_review_notes || 'No City review notes.')}</p><p>Generated ${new Date().toLocaleString()}</p></div>`;
+      <div class="print-cover">
+        <div class="print-brand">
+          <div class="print-title">Holloway Interim Housing Program</div>
+          <div style="font-size:13px;margin-top:4px;">Quarterly Reporting Summary · ${q}</div>
+          <div style="font-size:11px;color:#666;margin-top:6px;">City of West Hollywood · Human Services Division</div>
+        </div>
+        <div class="print-meta">
+          <strong>Reporting Period</strong><br>${this.quarters[q].period}<br><br>
+          <strong>Status</strong><br>${this.escape(status)}<br><br>
+          <strong>Generated</strong><br>${new Date().toLocaleString()}
+        </div>
+      </div>
+      <div class="print-kpis">
+        <div class="print-kpi"><div class="label">Persons Served</div><div class="value">${r.persons_quarter ?? ''}</div><div class="label">This quarter</div></div>
+        <div class="print-kpi"><div class="label">Persons Served YTD</div><div class="value">${r.persons_ytd ?? this.calcPersonsYtd(q)}</div><div class="label">Contract year</div></div>
+        <div class="print-kpi"><div class="label">Occupancy</div><div class="value">${occupancy}</div><div class="label">Bed nights</div></div>
+        <div class="print-kpi"><div class="label">PH Exits YTD</div><div class="value">${this.calcScopeYtd(q,'phExits')}</div><div class="label">Contract year</div></div>
+      </div>
+      <div class="print-section"><h2>Cover Page</h2><table class="print-table"><tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Agency</td><td>Ascencia</td></tr><tr><td>Program</td><td>Holloway Interim Housing Program</td></tr><tr><td>Data Source</td><td>${this.escape(r.data_source_note || '')}</td></tr><tr><td>Signatory</td><td>${this.escape(r.signatory_name || '')} · ${this.formatDate(r.signatory_date)}</td></tr></table></div>
+      <div class="print-section"><h2>Demographics</h2><h3>Age & Gender</h3><table class="print-table"><thead><tr><th>Age</th><th>Qtr Male</th><th>Qtr Female</th><th>Qtr NB/GNC</th><th>Qtr Unknown</th><th>Qtr Total</th><th>YTD Total</th></tr></thead><tbody>${ageRows}</tbody></table>
+      <h3>Ethnicity</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${ethRows}</tbody></table>
+      <h3>Language</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${langRows}</tbody></table></div>
+      <div class="print-section page-break"><h2>Scope of Services</h2><table class="print-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th></tr></thead><tbody>${scopeRows}</tbody></table></div>
+      <div class="print-section"><h2>Narrative</h2><p>${this.escape(r.narrative_text || 'No narrative provided.')}</p></div>
+      <div class="print-section"><h2>Roster Summary</h2><table class="print-table"><tr><td>Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>Unique Clients</td><td>${roster.unique_clients ?? ''}</td></tr><tr><td>Enrollments</td><td>${roster.enrollments ?? ''}</td></tr><tr><td>Households</td><td>${roster.households ?? ''}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
+      <div class="print-section page-break"><h2>Non-Permanent Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
+      <div class="print-section"><h2>City Review</h2><p>${this.escape(b.city_review_notes || 'No City review notes.')}</p></div>
+      <div class="print-footer">Prepared for City of West Hollywood Human Services Division · Holloway Reporting Portal</div>`;
     window.print();
   },
 
