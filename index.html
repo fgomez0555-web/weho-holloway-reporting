@@ -303,7 +303,6 @@
       
       <p id="login-error" style="color:#C0392B;font-size:12px;margin:0 0 8px;"></p>
       <button class="login-submit" id="login-submit-btn" onclick="doLogin()">Send Secure Login Link →</button>
-      <button class="login-submit" id="set-password-btn" onclick="setPasswordFromInvite()" style="display:none;background:#C9A24A;color:#1B2F5B;margin-top:8px;">Set Password →</button>
       <div class="login-footer">Access restricted to authorized Ascencia staff.<br>Contact your City program monitor for access.</div>
     </div>
   </div>
@@ -746,6 +745,25 @@
 
 
 <script>
+// ════════════════════════════════════════
+// SECURITY + GLOBAL DECLARATIONS (cleanup pass)
+// ════════════════════════════════════════
+window.escapeHtml = function(s){
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+};
+const escapeHtml = window.escapeHtml;
+window.currentQuarter = window.currentQuarter || null;
+window.newExitRows = window.newExitRows || 0;
+let currentQuarter = window.currentQuarter;
+let newExitRows = window.newExitRows;
+window._approvedUsersCache = window._approvedUsersCache || [];
+
 // ════════════════════════════════════════
 // DATA STORE — Q1 & Q2 from actual files
 // ════════════════════════════════════════
@@ -1309,14 +1327,14 @@ function populateRosterForm(q, ro) {
       <tr><td style="font-weight:500;">Unique Clients</td><td>${r.uniqueClients}</td></tr>
       <tr><td style="font-weight:500;">Enrollments</td><td>${r.enrollments}</td></tr>
       <tr><td style="font-weight:500;">Households</td><td>${r.households}</td></tr>
-      <tr><td style="font-weight:500;">Notes</td><td style="font-size:12px;color:var(--gray-600);">${r.notes}</td></tr>
+      <tr><td style="font-weight:500;">Notes</td><td style="font-size:12px;color:var(--gray-600);">${escapeHtml(r.notes)}</td></tr>
     `;
   } else {
     document.getElementById('roster-submitted-view').style.display = 'none';
     document.getElementById('roster-upload-view').style.display = '';
     document.getElementById('roster-submit-btn').style.display = '';
-    document.getElementById('roster-start').value = qd.status==='Q3' ? '2026-04-01' : qd.status==='Q4' ? '2026-07-01' : '';
-    document.getElementById('roster-end').value = qd.status==='Q3' ? '2026-06-30' : qd.status==='Q4' ? '2026-09-30' : '';
+    document.getElementById('roster-start').value = q==='Q3' ? '2026-04-01' : q==='Q4' ? '2026-07-01' : '';
+    document.getElementById('roster-end').value = q==='Q3' ? '2026-06-30' : q==='Q4' ? '2026-09-30' : '';
   }
 }
 
@@ -1508,30 +1526,6 @@ async function doLogin() {
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    errorEl.textContent = error.message;
-    return;
-  }
-
-  try {
-    await enterApp(data.user.id);
-  } catch (err) {
-    errorEl.textContent = err.message;
-  }
-}
-
-async function setPasswordFromInvite() {
-  const passwordEl = document.querySelector('#login-password');
-  const errorEl = document.getElementById('login-error');
-  errorEl.textContent = '';
-
-  const password = passwordEl.value;
-  if (!password || password.length < 8) {
-    errorEl.textContent = 'Enter a new password with at least 8 characters.';
-    return;
-  }
-
-  const { data, error } = await sb.auth.updateUser({ password });
   if (error) {
     errorEl.textContent = error.message;
     return;
@@ -1768,6 +1762,20 @@ async function submitForm(type) {
     const rows = [...tbody.querySelectorAll('tr:not(.historical)')];
     const groupId = crypto.randomUUID();
 
+    // De-dupe on resubmit: clear any prior exit rows for this program+quarter
+    // before inserting the fresh batch. Without this, every Submit click
+    // appends duplicate rows into non_permanent_exits.
+    const { error: priorDeleteError } = await sb
+      .from('non_permanent_exits')
+      .delete()
+      .eq('program_id', pid)
+      .eq('quarter', q)
+      .eq('fiscal_year', 'FY2025-26');
+    if (priorDeleteError) {
+      alert('Could not clear prior exits before resubmit: ' + priorDeleteError.message);
+      return;
+    }
+
     for (let i = 0; i < rows.length; i++) {
       const selects = rows[i].querySelectorAll('select');
       const inputs = rows[i].querySelectorAll('input[type=text]');
@@ -1776,7 +1784,7 @@ async function submitForm(type) {
         quarter: q,
         fiscal_year: 'FY2025-26',
         submission_group_id: groupId,
-        exit_number: HISTORICAL_EXITS.length + i + 1,
+        exit_number: i + 1,
         exit_type: selects[1]?.value || null,
         voluntary_involuntary: selects[2]?.value || null,
         reason_for_exit: inputs[0]?.value || null,
@@ -2327,21 +2335,35 @@ async function loadApprovedUsers() {
     return;
   }
 
-  tbody.innerHTML = data.map(u => {
+  // Cache rows so Edit/Toggle buttons can look up by index instead of
+  // embedding JSON or raw email strings in onclick="" attributes.
+  window._approvedUsersCache = data;
+  tbody.innerHTML = data.map((u, i) => {
     const access = normalizeAccessType(u.access_type || u.role);
     const activeBadge = u.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Inactive</span>';
     return `<tr>
-      <td>${u.email || ''}</td>
-      <td>${u.full_name || ''}</td>
-      <td>${u.organization || ''}</td>
-      <td>${access.replaceAll('_',' ')}</td>
+      <td>${escapeHtml(u.email)}</td>
+      <td>${escapeHtml(u.full_name)}</td>
+      <td>${escapeHtml(u.organization)}</td>
+      <td>${escapeHtml(access.replaceAll('_',' '))}</td>
       <td>${activeBadge}</td>
       <td>
-        <button class="btn btn-ghost btn-sm" onclick='editApprovedUser(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="toggleApprovedUser('${u.email}', ${!u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
+        <button class="btn btn-ghost btn-sm" onclick="editApprovedUserByIndex(${i})">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleApprovedUserByIndex(${i})">${u.active ? 'Deactivate' : 'Activate'}</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+function editApprovedUserByIndex(i){
+  const u = (window._approvedUsersCache || [])[i];
+  if (!u) return;
+  editApprovedUser(u);
+}
+function toggleApprovedUserByIndex(i){
+  const u = (window._approvedUsersCache || [])[i];
+  if (!u) return;
+  toggleApprovedUser(u.email, !u.active);
 }
 
 function editApprovedUser(u) {
@@ -3328,7 +3350,7 @@ function populateQuarterlyForm(q, ro) {
     sb.from('bundle_status_log').select('status,note,created_at,actor_id').eq('bundle_id', bundle.id).order('created_at',{ascending:true}).then(({data,error})=>{
       const body=byId('activity-log-body'); if(!body) return;
       if(error || !data?.length){ body.innerHTML='<div class="helper-line">No activity has been logged yet.</div>'; return; }
-      body.innerHTML=data.map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--gray-100);"><strong style="color:var(--navy);">${r.status}</strong> <span class="helper-line">${new Date(r.created_at).toLocaleString()}</span><br><span style="font-size:12px;color:var(--gray-600);">${r.note||''}</span></div>`).join('');
+      body.innerHTML=data.map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--gray-100);"><strong style="color:var(--navy);">${r.status}</strong> <span class="helper-line">${new Date(r.created_at).toLocaleString()}</span><br><span style="font-size:12px;color:var(--gray-600);">${escapeHtml(r.note||'')}</span></div>`).join('');
     });
   }
 
@@ -3536,7 +3558,7 @@ function populateQuarterlyForm(q, ro) {
       <div class="card-header"><div><div class="card-title">City Admin Review & Acceptance</div><div class="page-subtitle" style="margin-top:2px;">Review Holloway quarterly bundles, accept reports, request revisions, or void a submission for correction.</div></div><button class="btn btn-ghost btn-sm" onclick="renderAdminReviewPanel()">Refresh</button></div>
       <div class="card-body" style="overflow-x:auto;">
         <table class="admin-review-table"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revision Count</th><th>City Notes</th><th>Actions</th></tr></thead><tbody>
-          ${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.data.period || '—'}</td><td><span class="status-pill ${r.status}">${statusLabel(r.status)}</span></td><td>${r.bundle.submitted_at ? new Date(r.bundle.submitted_at).toLocaleDateString() : '—'}</td><td>${r.bundle.revision_count || 0}</td><td>${r.bundle.city_review_notes ? String(r.bundle.city_review_notes).slice(0,80) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
+          ${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.data.period || '—'}</td><td><span class="status-pill ${r.status}">${statusLabel(r.status)}</span></td><td>${r.bundle.submitted_at ? new Date(r.bundle.submitted_at).toLocaleDateString() : '—'}</td><td>${r.bundle.revision_count || 0}</td><td>${r.bundle.city_review_notes ? escapeHtml(String(r.bundle.city_review_notes).slice(0,80)) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
         </tbody></table>
       </div></div>`;
   }
@@ -3764,7 +3786,7 @@ function populateQuarterlyForm(q, ro) {
       <div class="card-header"><div><div class="card-title">City Admin Review & Acceptance</div><div class="page-subtitle">Review Holloway quarterly bundles. Accepted quarters are locked; submitted/resubmitted quarters can be accepted or returned for revisions.</div></div><button class="btn btn-ghost btn-sm" onclick="showAdminReviewPanel(false)">Refresh</button></div>
       <div class="card-body" style="overflow-x:auto;">
         <table class="svc-table" style="width:100%;"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revisions</th><th>City Notes</th><th>Actions</th></tr></thead><tbody>
-          ${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.data.period || '—'}</td><td><span class="badge ${r.st==='accepted'?'badge-green':r.st==='review'?'badge-navy':r.st==='revision_requested'?'badge-red':'badge-amber'}">${statusLabel(r.st)}</span></td><td>${r.bundle.submitted_at ? new Date(r.bundle.submitted_at).toLocaleDateString() : '—'}</td><td>${r.bundle.revision_count || 0}</td><td>${r.bundle.city_review_notes ? String(r.bundle.city_review_notes).slice(0,100) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" ${r.st==='accepted'?'disabled':''} onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" ${r.st==='accepted'?'disabled':''} onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
+          ${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.data.period || '—'}</td><td><span class="badge ${r.st==='accepted'?'badge-green':r.st==='review'?'badge-navy':r.st==='revision_requested'?'badge-red':'badge-amber'}">${statusLabel(r.st)}</span></td><td>${r.bundle.submitted_at ? new Date(r.bundle.submitted_at).toLocaleDateString() : '—'}</td><td>${r.bundle.revision_count || 0}</td><td>${r.bundle.city_review_notes ? escapeHtml(String(r.bundle.city_review_notes).slice(0,100)) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" ${r.st==='accepted'?'disabled':''} onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" ${r.st==='accepted'?'disabled':''} onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
         </tbody></table>
       </div></div>`;
   }
@@ -3892,7 +3914,9 @@ function populateQuarterlyForm(q, ro) {
     if (error) throw new Error('Could not load bundle: ' + error.message);
 
     if (!data) {
-      const initialStatus = (q === 'Q1' || q === 'Q2') ? 'accepted' : 'incomplete';
+      // Never auto-accept on bundle creation. Acceptance must always be an
+      // explicit city-admin action so the audit log captures who/when.
+      const initialStatus = 'incomplete';
       const payload = {
         program_id: pid,
         quarter: q,
@@ -4037,7 +4061,7 @@ function populateQuarterlyForm(q, ro) {
       <div class="card-header"><div><div class="card-title">City Admin Review & Acceptance</div><div class="page-subtitle">Review Holloway quarterly bundles. Q1 and Q2 should show as accepted after the status SQL patch is applied.</div></div><button class="btn btn-ghost btn-sm" onclick="renderAdminReviewPanel()">Refresh</button></div>
       <div class="card-body" style="overflow-x:auto;">
         <table class="svc-table" style="width:100%;"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revisions</th><th>City Notes</th><th>Actions</th></tr></thead><tbody>
-        ${rows.map(r => `<tr><td><strong>${r.q}</strong></td><td>${r.qd.period || '—'}</td><td><span class="badge ${badgeClass(r.status)}">${labelStatus(r.status)}</span></td><td>${r.b.submitted_at ? new Date(r.b.submitted_at).toLocaleDateString() : '—'}</td><td>${r.b.revision_count || 0}</td><td>${r.b.city_review_notes ? String(r.b.city_review_notes).slice(0,120) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" ${String(r.status).toLowerCase()==='accepted'?'disabled':''} onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" ${String(r.status).toLowerCase()==='accepted'?'disabled':''} onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
+        ${rows.map(r => `<tr><td><strong>${r.q}</strong></td><td>${r.qd.period || '—'}</td><td><span class="badge ${badgeClass(r.status)}">${labelStatus(r.status)}</span></td><td>${r.b.submitted_at ? new Date(r.b.submitted_at).toLocaleDateString() : '—'}</td><td>${r.b.revision_count || 0}</td><td>${r.b.city_review_notes ? escapeHtml(String(r.b.city_review_notes).slice(0,120)) : '—'}</td><td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" onclick="setQuarter('${r.q}');openForm('quarterly')">View</button> <button class="btn btn-gold btn-sm" ${String(r.status).toLowerCase()==='accepted'?'disabled':''} onclick="adminAcceptQuarter('${r.q}')">Accept</button> <button class="btn btn-ghost btn-sm" ${String(r.status).toLowerCase()==='accepted'?'disabled':''} onclick="adminRequestRevision('${r.q}')">Request Revisions</button> <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${r.q}')">Void</button></td></tr>`).join('')}
         </tbody></table>
       </div>
     </div>`;
