@@ -149,10 +149,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .field-input[readonly], .field-input:disabled, .field-select:disabled, .field-textarea:disabled { background:var(--gray-100); color:var(--gray-600); cursor:not-allowed; }
 .field-textarea { resize:vertical; min-height:90px; }
 .field-hint { font-size:11px; color:var(--gray-400); }
-.tooltip { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; background:#EEF2FA; color:var(--navy); font-size:10px; font-weight:800; margin-left:5px; position:relative; cursor:help; vertical-align:middle; }
-.tooltip .tooltip-text { visibility:hidden; opacity:0; position:absolute; left:50%; bottom:130%; transform:translateX(-50%); width:240px; background:var(--navy); color:var(--white); text-align:left; padding:9px 10px; border-radius:var(--radius); font-size:11px; line-height:1.35; box-shadow:var(--shadow-lg); z-index:3000; transition:opacity .15s ease; font-weight:500; text-transform:none; letter-spacing:0; }
-.tooltip:hover .tooltip-text, .tooltip:focus .tooltip-text { visibility:visible; opacity:1; }
-.metric-label { display:inline-flex; align-items:center; gap:2px; }
 .field-error { font-size:11px; color:var(--red); display:none; }
 .has-error .field-input, .has-error .field-select, .has-error .field-textarea { border-color:var(--red); box-shadow:0 0 0 3px rgba(192,57,43,.08); }
 .has-error .field-error { display:block; }
@@ -167,6 +163,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .demo-cell input[type=number] { width:50px; border:1px solid var(--border); border-radius:3px; padding:3px 5px; font-size:12px; text-align:center; }
 .demo-cell.ro { background:var(--gray-100); text-align:center; font-weight:800; color:var(--navy); }
 
+.demo-grid .demo-cell:nth-child(22n+12),
+.demo-grid .demo-cell:nth-child(22n+13),
+.demo-grid .demo-cell:nth-child(22n+14),
+.demo-grid .demo-cell:nth-child(22n+15),
+.demo-grid .demo-cell:nth-child(22n+16),
+.demo-grid .demo-cell:nth-child(22n+17),
+.demo-grid .demo-cell:nth-child(22n+18),
+.demo-grid .demo-cell:nth-child(22n+19),
+.demo-grid .demo-cell:nth-child(22n+20),
+.demo-grid .demo-cell:nth-child(22n+21),
+.demo-grid .demo-cell:nth-child(22n+22) { background:#FBFAF7; }
+.demo-cell.total-row { background:#EEF2FA !important; font-weight:900; color:var(--navy); }
+.svc-table tbody tr:nth-child(even):not(.cat-header) td { background:#FBFAF7; }
+.svc-table td.total-cell, .svc-table tr.total-row td { background:#EEF2FA !important; font-weight:900; color:var(--navy); }
+
 .svc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
 .svc-table th { background:var(--navy); color:var(--white); padding:9px 12px; text-align:left; font-weight:700; font-size:11.5px; }
 .svc-table td { padding:8px 12px; border-bottom:1px solid var(--gray-100); vertical-align:middle; }
@@ -176,12 +187,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .upload-zone { border:2px dashed var(--border); border-radius:var(--radius-lg); padding:30px 20px; text-align:center; cursor:pointer; background:var(--gray-100); }
 .upload-zone:hover { border-color:var(--navy); background:#EEF2FA; }
 .upload-zone input[type=file] { display:none; }
-
-
-.demo-validation-summary { margin-top:12px; padding:12px 14px; border-radius:var(--radius); font-size:12.5px; border:1px solid #9FD4B5; background:var(--green-light); color:var(--green); }
-.demo-validation-summary.warn { border-color:#F0C96B; background:var(--amber-light); color:#7A5200; }
-.demo-validation-summary.error { border-color:#F3B0A7; background:var(--red-light); color:#7A1E15; }
-.demo-validation-summary ul { margin:6px 0 0 18px; }
 
 .error-chip { position:fixed; right:22px; bottom:22px; background:var(--red); color:var(--white); border:none; border-radius:22px; padding:10px 16px; font-weight:800; box-shadow:var(--shadow-lg); display:none; z-index:2001; cursor:pointer; }
 .confirm-modal { display:none; position:fixed; inset:0; background:rgba(27,47,91,.55); z-index:2100; align-items:center; justify-content:center; padding:20px; }
@@ -424,7 +429,7 @@ const App = {
   },
 
   ageBands: ['18–24','25–39','40–49','50–61','62–64','65–74','75–84','85+'],
-  ethnicityKeys: ['Asian/Pacific Islander','Black, African American, or African','Hispanic/Latina/o/e','American Indian / Alaska Native','White','Other (Middle Eastern/North African)','Unknown'],
+  ethnicityKeys: ['Asian/Pacific Islander','Black, African American, or African','Hispanic/Latina/o/e','American Indian / Alaska Native','Middle Eastern / North African','White','Other','Unknown'],
   languageKeys: ['English','Spanish','Russian','Farsi','Other'],
 
   cumulativeScope: ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'],
@@ -727,7 +732,9 @@ const App = {
       </div>`;
     this.bindQuarterButtons(el);
     this.bindSubmitBundleButton(el);
-    el.querySelector('[data-open="quarterly"]').addEventListener('click', () => this.openForm('quarterly'));
+    el.querySelectorAll('[data-open]').forEach(btn => {
+      btn.addEventListener('click', () => this.openForm(btn.dataset.open));
+    });
     el.querySelector('#btn-print-current').addEventListener('click', () => this.printReport(q));
   },
 
@@ -738,7 +745,7 @@ const App = {
       <div aria-hidden="true">📌</div>
       <div><strong>${q} · ${this.quarters[q].period}</strong><br>
       Status: ${this.statusBadge(this.bundleStatus(q))} &nbsp; Due: ${this.formatDate(this.quarters[q].due)} &nbsp; 
-      YTD persons served: <strong>${this.calcPersonsYtd(q)}</strong> &nbsp; 
+      YTD persons served: <strong>${report.persons_ytd ?? this.calcPersonsYtd(q)}</strong> &nbsp; 
       Occupancy: <strong>${this.percent(scope.bedNightsOcc, scope.bedNightsAvail)}</strong></div>
     </div>`;
   },
@@ -746,7 +753,7 @@ const App = {
   renderKpis(q) {
     const r = this.data.reports[q] || {};
     const s = this.reportScope(q);
-    const ytd = this.calcPersonsYtd(q);
+    const ytd = r.persons_ytd ?? this.calcPersonsYtd(q);
     return [
       ['Persons Served', ytd ?? '—', `${r.persons_quarter ?? '—'} this quarter`, 'gold'],
       ['Occupancy', this.percent(s.bedNightsOcc, s.bedNightsAvail), `${s.bedNightsOcc ?? '—'} / ${s.bedNightsAvail ?? '—'} bed nights`, 'green'],
@@ -1012,7 +1019,6 @@ const App = {
     this.renderNarrativeForm(q);
     this.renderReviewForm(q);
     this.bindQuarterlyInputs();
-    this.recalculateLiveForm();
     this.updateReadOnlyStates('quarterly');
   },
 
@@ -1025,7 +1031,7 @@ const App = {
 
   renderCoverForm(q) {
     const r = this.data.reports[q] || {};
-    const personsYtd = this.calcPersonsYtd(q);
+    const personsYtd = r.persons_ytd ?? this.calcPersonsYtd(q);
     const d = r.demographics_age_gender || this.blankAgeGender();
     const eth = this.normalizeEthnicity(r.demographics_ethnicity || {});
     const lang = this.normalizeLanguage(r.demographics_language || {});
@@ -1044,10 +1050,11 @@ const App = {
       </div>
       <div class="form-section"><div class="form-section-title">Demographics — Age & Gender</div>${this.renderAgeGenderGrid(q,d)}</div>
       <div class="form-row">
-        <div class="field-group"><label class="field-label">Ethnicity</label>${this.renderSimpleDemoTable('eth', this.ethnicityKeys, eth, q)}</div>
+        <div class="field-group"><label class="field-label">Ethnicity</label>${this.renderSimpleDemoTable('eth', this.ethnicityKeys, eth, q)}
+          <div class="field-group" style="margin-top:10px;"><label class="field-label" for="qr-eth-other-detail">If Other, please specify</label><input class="field-input" id="qr-eth-other-detail" value="${this.escape(r.demographics_ethnicity_other_detail || '')}" placeholder="Optional description of Other category"><span class="field-hint">Use only when the Other count is greater than zero.</span></div>
+        </div>
         <div class="field-group"><label class="field-label">Household Language</label>${this.renderSimpleDemoTable('lang', this.languageKeys, lang, q)}</div>
       </div>
-      <div id="demo-validation-summary" class="demo-validation-summary">Demographic totals are aligned.</div>
       <div class="form-section" style="margin-top:20px;"><div class="form-section-title">Signatory</div>
         <div class="form-row three">
           ${this.field('qr-signatory','Name / Title',r.signatory_name || 'Laura Duncan, Executive Director','text',true)}
@@ -1062,6 +1069,7 @@ const App = {
   },
 
   renderAgeGenderGrid(q, data) {
+    let qMale=0, qFemale=0, qNb=0, qUnk=0, yMale=0, yFemale=0, yNb=0, yUnk=0;
     let html = `<div class="demo-grid">
       <div class="demo-cell header">Age Group</div><div class="demo-cell header">Qtr Male</div><div class="demo-cell header">Qtr Female</div><div class="demo-cell header">Qtr NB/GNC</div><div class="demo-cell header">Qtr Unknown</div><div class="demo-cell header">Qtr Total</div>
       <div class="demo-cell header ytd-head">YTD Male</div><div class="demo-cell header ytd-head">YTD Female</div><div class="demo-cell header ytd-head">YTD NB/GNC</div><div class="demo-cell header ytd-head">YTD Unknown</div><div class="demo-cell header ytd-head">YTD Total</div>`;
@@ -1069,65 +1077,62 @@ const App = {
       const row = data[age] || {male:0,female:0,nb:0,unk:0};
       const y = this.calcAgeGenderYtd(q, age, row);
       const total = this.sumDemoRow(row);
+      qMale += Number(row.male||0); qFemale += Number(row.female||0); qNb += Number(row.nb||0); qUnk += Number(row.unk||0);
+      yMale += Number(y.male||0); yFemale += Number(y.female||0); yNb += Number(y.nb||0); yUnk += Number(y.unk||0);
       html += `<div class="demo-cell row-label">${age}</div>
         ${['male','female','nb','unk'].map(k => `<div class="demo-cell"><input type="number" min="0" class="demo-input" data-demo="age" data-age="${age}" data-key="${k}" value="${row[k]||0}"></div>`).join('')}
         <div class="demo-cell ro" data-age-total="${age}">${total}</div>
         <div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="male">${y.male}</div><div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="female">${y.female}</div><div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="nb">${y.nb}</div><div class="demo-cell ro" data-ytd-age="${age}" data-ytd-key="unk">${y.unk}</div><div class="demo-cell ro" data-ytd-age-total="${age}">${this.sumDemoRow(y)}</div>`;
     });
+    html += `<div class="demo-cell row-label total-row">Grand Total</div>
+      <div class="demo-cell ro total-row" data-age-grand="male">${qMale}</div><div class="demo-cell ro total-row" data-age-grand="female">${qFemale}</div><div class="demo-cell ro total-row" data-age-grand="nb">${qNb}</div><div class="demo-cell ro total-row" data-age-grand="unk">${qUnk}</div><div class="demo-cell ro total-row" data-age-grand-total>${qMale+qFemale+qNb+qUnk}</div>
+      <div class="demo-cell ro total-row" data-ytd-age-grand="male">${yMale}</div><div class="demo-cell ro total-row" data-ytd-age-grand="female">${yFemale}</div><div class="demo-cell ro total-row" data-ytd-age-grand="nb">${yNb}</div><div class="demo-cell ro total-row" data-ytd-age-grand="unk">${yUnk}</div><div class="demo-cell ro total-row" data-ytd-age-grand-total>${yMale+yFemale+yNb+yUnk}</div>`;
     return html + `</div><p class="field-hint" style="margin-top:8px;">Quarter demographics must equal Persons Served This Quarter. YTD demographics are calculated and read-only.</p>`;
   },
 
-  renderSimpleDemoTable(prefix, keys, values, q) {
+  renderSimpleDemoTable  renderSimpleDemoTable(prefix, keys, values, q) {
+    let qTotal = 0;
+    let yTotal = 0;
+    const rows = keys.map(k => {
+      const current = Number(values[k] || 0);
+      qTotal += current;
+      const ytd = prefix === 'eth' ? this.calcSimpleDemoYtd(q,'demographics_ethnicity',k,current) : this.calcSimpleDemoYtd(q,'demographics_language',k,current);
+      yTotal += Number(ytd || 0);
+      return `<tr><td>${this.escape(k)}</td><td><input type="number" min="0" class="demo-input" data-demo="${prefix}" data-key="${this.escape(k)}" value="${current}"></td><td data-ytd-simple="${prefix}" data-key="${this.escape(k)}" style="text-align:right;font-weight:800;color:var(--navy);">${ytd}</td></tr>`;
+    }).join('');
     return `<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;"><table class="svc-table"><thead><tr><th>Category</th><th style="width:80px;text-align:right;">Qtr</th><th style="width:80px;text-align:right;">YTD</th></tr></thead><tbody>
-      ${keys.map(k => {
-        const ytd = prefix === 'eth' ? this.calcSimpleDemoYtd(q,'demographics_ethnicity',k,values[k]||0) : this.calcSimpleDemoYtd(q,'demographics_language',k,values[k]||0);
-        return `<tr><td>${k}</td><td><input type="number" min="0" class="demo-input" data-demo="${prefix}" data-key="${k}" value="${values[k]||0}"></td><td data-ytd-simple="${prefix}" data-key="${k}" style="text-align:right;font-weight:800;color:var(--navy);">${ytd}</td></tr>`;
-      }).join('')}</tbody></table></div>`;
+      ${rows}
+      <tr class="total-row"><td>Grand Total</td><td class="total-cell" data-simple-q-total="${prefix}" style="text-align:right;">${qTotal}</td><td class="total-cell" data-simple-ytd-total="${prefix}" style="text-align:right;">${yTotal}</td></tr>
+      </tbody></table></div>`;
   },
 
-  scopeRows() {
-    return [
-      ['People Served – Snapshots','activeResidents','Active Residents (point-in-time, quarter end)','quarter','People still enrolled on the last day of the quarter. Should be less than or equal to Residents Served During Quarter.'],
-      ['People Served – Snapshots','residentsServed','Residents Served During Quarter (unique)','quarter','Distinct people with at least one day in the program during the quarter. Count each person once even if they had multiple enrollments.'],
-      ['People Served – Snapshots','unduplicatedYTD','Unduplicated Persons Served (YTD)','calcPersons','Distinct people served from program launch through the quarter end. This is calculated from the new, unduplicated persons reported each quarter.'],
-      ['People Served – Snapshots','newIntakes','New Intakes (quarter)','ytd','Entries into the program during the quarter, including readmits. The YTD display is cumulative across the contract year.'],
-      ['Occupancy','bedNightsAvail','Bed-nights available','ytd','Capacity over time, calculated as beds multiplied by days in the quarter. For example, 20 beds across 91 days equals 1,820 bed-nights.'],
-      ['Occupancy','bedNightsOcc','Bed-nights occupied','ytd','Sum of beds actually occupied across nights in the quarter. Occupied bed-nights should not exceed available bed-nights.'],
-      ['Permanent Housing Exit Rate (% of Served)','phExits','Exits to Permanent Housing','ytd','People who exit to a permanent destination, such as RRH, PSH, voucher-supported housing, or market housing.'],
-      ['Average Days: Entry → Permanent Housing','avgDaysToPH','Sum of Days from Entry → PH (Program Average)','quarter','For each permanent housing exit, count calendar days from program entry to permanent housing move-in. Only include cases that actually exited to permanent housing.'],
-      ['6-Month Retention After PH','sixMonthPlacements','Placements reaching 6-month check','quarter','Permanent housing placements whose 6-month anniversary falls in this quarter.'],
-      ['6-Month Retention After PH','sixMonthHoused','Still housed at 6 months','quarter','Of those due for a 6-month check this quarter, count how many were confirmed still housed.'],
-      ['12-Month Retention After PH','twelveMonthPlacements','Placements reaching 12-month check','quarter','Permanent housing placements whose 12-month anniversary falls in this quarter.'],
-      ['12-Month Retention After PH','twelveMonthHoused','Still housed at 12 months','quarter','Of those due for a 12-month check this quarter, count how many were confirmed still housed.'],
-      ['Participation in Supportive Services','suppServicesEngaged','Residents engaged ≥1 meaningful service/month','quarter','Unique residents with at least one qualifying service contact each month they were present during the quarter. Use Residents Served During Quarter as the denominator.'],
-      ['Income/Benefit Improvement','incomeIncrease','Clients with ↑ earned income OR new/↑ public benefits','quarter','Residents who had a verified income gain, benefit start, or benefit increase during the quarter.'],
-      ['Income/Benefit Improvement','incomeMaintained','Clients who maintained income and/or public benefits','quarter','Residents who maintained existing income and/or public benefits during the quarter.'],
-      ['Resident Satisfaction','satSatisfied','Survey responses: Satisfied/Very Satisfied (quarter)','quarter','Count responses marked satisfied or very satisfied. This number cannot exceed total survey responses.'],
-      ['Resident Satisfaction','satTotal','Total survey responses (quarter)','quarter','All completed resident satisfaction surveys during the quarter.'],
-      ['Non-Permanent Housing Exits','exitsTemp','Temporary Housing','ytd','Exits to time-limited or interim housing settings. Destination counts across all exit types should sum to total exits.'],
-      ['Non-Permanent Housing Exits','exitsInstitutional','Institutional Setting','ytd','Exits to hospital, psychiatric care, jail/prison, or residential treatment.'],
-      ['Non-Permanent Housing Exits','exitsHomeless','Returned to Homelessness','ytd','Exits to street, encampment, unsheltered location, or other homeless destination.'],
-      ['Non-Permanent Housing Exits','exitsUnknown','Unknown/Left Program','ytd','Left without a known destination or lost contact. Keep this count low and investigate spikes.']
-    ];
-  },
-
-  tooltip(text) {
-    return `<span class="tooltip" tabindex="0" aria-label="${this.escape(text)}">i<span class="tooltip-text">${this.escape(text)}</span></span>`;
-  },
-
-  renderScopeForm(q) {
+  renderScopeForm  renderScopeForm(q) {
     const s = this.reportScope(q);
-    const rows = this.scopeRows();
+    const rows = [
+      ['Current Operations','activeResidents','Active Residents','quarter','Snapshot at end of quarter.'],
+      ['Current Operations','residentsServed','Residents Served During Quarter','quarter','Current quarter only.'],
+      ['Cumulative Activity','newIntakes','New Intakes','ytd','Cumulative across contract year.'],
+      ['Occupancy','bedNightsAvail','Bed Nights Available','ytd','Cumulative across contract year.'],
+      ['Occupancy','bedNightsOcc','Bed Nights Occupied','ytd','Cannot exceed available bed nights.'],
+      ['Housing Outcomes','phExits','Permanent Housing Exits','ytd','Cumulative across contract year.'],
+      ['Housing Outcomes','avgDaysToPH','Average Days to PH','quarter','Quarter-specific average.'],
+      ['Services','suppServicesEngaged','Supportive Services Engaged','quarter','Current quarter only unless source report defines otherwise.'],
+      ['Income','incomeIncrease','Income Increased','quarter','Current quarter only.'],
+      ['Income','incomeMaintained','Income Maintained','quarter','Current quarter only.'],
+      ['Satisfaction','satSatisfied','Satisfied Responses','quarter','Cannot exceed total responses.'],
+      ['Satisfaction','satTotal','Total Survey Responses','quarter','Current quarter only.'],
+      ['Non-Permanent Exits','exitsTemp','Temporary / Interim Housing','ytd','Cumulative across contract year.'],
+      ['Non-Permanent Exits','exitsInstitutional','Institutional Setting','ytd','Cumulative across contract year.'],
+      ['Non-Permanent Exits','exitsHomeless','Returned to Homelessness','ytd','Cumulative across contract year.'],
+      ['Non-Permanent Exits','exitsUnknown','Unknown / Left Program','ytd','Cumulative across contract year.']
+    ];
     let last = '';
-    document.getElementById('qr-scope-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">ℹ️</div><div><strong>Scope of Services</strong><br>Metric labels mirror the existing City reporting workbook. Use the info icons for short definitions and data checks.</div></div>
-      <table class="svc-table"><thead><tr><th>Metric</th><th>Quarter Count</th><th>Year-to-Date Count / Display</th><th>Guidance</th></tr></thead><tbody>
+    document.getElementById('qr-scope-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">ℹ️</div><div><strong>Scope of Services</strong><br>YTD fields are calculated only for cumulative metrics. Snapshot and service fields remain quarter-specific.</div></div>
+      <table class="svc-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th><th>Notes</th></tr></thead><tbody>
       ${rows.map(([cat,key,label,mode,hint]) => {
         const header = cat !== last ? (last=cat, `<tr class="cat-header"><td colspan="4">${cat}</td></tr>`) : '';
-        if (mode === 'calcPersons') {
-          return `${header}<tr><td><span class="metric-label">${label}${this.tooltip(hint)}</span></td><td class="field-hint">N/A</td><td data-scope-ytd="${key}">${this.calcPersonsYtd(q)}</td><td class="field-hint">Calculated from new, unduplicated persons served.</td></tr>`;
-        }
         const ytd = mode === 'ytd' ? this.calcScopeYtd(q,key,s[key] || 0) : 'Quarter only';
-        return `${header}<tr><td><span class="metric-label">${label}${this.tooltip(hint)}</span></td><td><input type="number" min="0" id="scope-${key}" data-scope="${key}" value="${s[key] ?? ''}"></td><td ${mode === 'ytd' ? `data-scope-ytd="${key}"` : ''}>${ytd}</td><td class="field-hint">${hint}</td></tr>`;
+        return `${header}<tr><td>${label}</td><td><input type="number" min="0" id="scope-${key}" data-scope="${key}" value="${s[key] ?? ''}"></td><td ${mode === 'ytd' ? `data-scope-ytd="${key}"` : ''}>${ytd}</td><td class="field-hint">${hint}</td></tr>`;
       }).join('')}</tbody></table>`;
   },
 
@@ -1159,7 +1164,8 @@ const App = {
   recalculateLiveForm() {
     const q = this.currentQuarter;
     const qv = Number(document.getElementById('qr-persons-quarter')?.value || 0);
-    const ytd = this.calcPersonsYtd(q, qv);
+    const priorPersons = this.priorQuarters(q).reduce((sum,qq) => sum + Number(this.data.reports[qq]?.persons_quarter || 0),0);
+    const ytd = priorPersons + qv;
     const ytdEl = document.getElementById('qr-persons-ytd');
     if (ytdEl) ytdEl.value = ytd || '';
 
@@ -1180,6 +1186,26 @@ const App = {
       if (total) total.textContent = this.sumDemoRow(y);
     });
 
+
+
+    // Grand totals for age/gender
+    let qMale=0, qFemale=0, qNb=0, qUnk=0, yMale=0, yFemale=0, yNb=0, yUnk=0;
+    this.ageBands.forEach(age => {
+      ['male','female','nb','unk'].forEach(k => {
+        qMale += k === 'male' ? Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0) : 0;
+        qFemale += k === 'female' ? Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0) : 0;
+        qNb += k === 'nb' ? Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0) : 0;
+        qUnk += k === 'unk' ? Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0) : 0;
+      });
+      const currentRow = {};
+      ['male','female','nb','unk'].forEach(k => currentRow[k] = Number(document.querySelector(`[data-demo="age"][data-age="${CSS.escape(age)}"][data-key="${k}"]`)?.value || 0));
+      const y = this.calcAgeGenderYtd(q, age, currentRow);
+      yMale += Number(y.male||0); yFemale += Number(y.female||0); yNb += Number(y.nb||0); yUnk += Number(y.unk||0);
+    });
+    const setText = (sel,val) => { const el = document.querySelector(sel); if (el) el.textContent = val; };
+    setText('[data-age-grand="male"]', qMale); setText('[data-age-grand="female"]', qFemale); setText('[data-age-grand="nb"]', qNb); setText('[data-age-grand="unk"]', qUnk); setText('[data-age-grand-total]', qMale+qFemale+qNb+qUnk);
+    setText('[data-ytd-age-grand="male"]', yMale); setText('[data-ytd-age-grand="female"]', yFemale); setText('[data-ytd-age-grand="nb"]', yNb); setText('[data-ytd-age-grand="unk"]', yUnk); setText('[data-ytd-age-grand-total]', yMale+yFemale+yNb+yUnk);
+
     // Ethnicity and language YTD totals
     document.querySelectorAll('[data-ytd-simple]').forEach(cell => {
       const prefix = cell.dataset.ytdSimple;
@@ -1190,13 +1216,23 @@ const App = {
       cell.textContent = this.calcSimpleDemoYtd(q, col, key, currentVal);
     });
 
+
+    ['eth','lang'].forEach(prefix => {
+      let qTotal = 0, yTotal = 0;
+      document.querySelectorAll(`[data-demo="${prefix}"]`).forEach(input => qTotal += Number(input.value || 0));
+      document.querySelectorAll(`[data-ytd-simple="${prefix}"]`).forEach(cell => yTotal += Number(cell.textContent || 0));
+      const qOut = document.querySelector(`[data-simple-q-total="${prefix}"]`);
+      const yOut = document.querySelector(`[data-simple-ytd-total="${prefix}"]`);
+      if (qOut) qOut.textContent = qTotal;
+      if (yOut) yOut.textContent = yTotal;
+    });
+
     // Scope YTD totals
     document.querySelectorAll('[data-scope-ytd]').forEach(cell => {
       const key = cell.dataset.scopeYtd;
       const currentVal = Number(document.getElementById(`scope-${key}`)?.value || 0);
       cell.textContent = this.calcScopeYtd(q, key, currentVal);
     });
-    this.updateDemographicValidationSummary();
   },
 
   renderRosterForm() {
@@ -1205,7 +1241,7 @@ const App = {
     document.getElementById('roster-meta').innerHTML = `${q} · ${this.quarters[q].period} · ${this.statusBadge(this.bundleStatus(q))}`;
     document.getElementById('roster-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">📁</div><div><strong>HMIS Export</strong><br>Upload or summarize the HMIS-generated roster for clients active during the quarter.</div></div>
       <div class="form-section"><div class="form-section-title">Upload HMIS Export</div>
-        <label class="upload-zone"><input type="file" id="roster-file"><div style="font-size:30px;" aria-hidden="true">📁</div><div id="roster-file-label"><strong>Click to select roster or backup file</strong><br><span class="field-hint">Accepted formats: Any file type. Upload the HMIS export or supporting roster backup used for this quarter.</span></div></label>
+        <label class="upload-zone"><input type="file" id="roster-file"><div style="font-size:30px;" aria-hidden="true">📁</div><div id="roster-file-label"><strong>Click to select HMIS export</strong><br><span class="field-hint">Accepted formats: Any file type</span></div></label>
       </div>
       <div class="form-section"><div class="form-section-title">Roster Period & Summary</div>
         <div class="form-row">${this.field('roster-start','Period Start',r.period_start || '','date',true)}${this.field('roster-end','Period End',r.period_end || '','date',true)}</div>
@@ -1297,13 +1333,12 @@ const App = {
     this.setSaveState('qr','Saving...');
     const scope = {};
     Object.keys(this.scopeMap).forEach(key => scope[this.scopeMap[key]] = this.numVal('scope-' + key));
-    scope.unduplicated_ytd = this.calcPersonsYtd(q, this.numVal('qr-persons-quarter') || 0);
 
     const payload = {
       program_id: this.program.id, quarter: q, fiscal_year: this.fiscalYear, status: 'draft',
       signatory_name: this.val('qr-signatory'), signatory_date: this.val('qr-sig-date') || null,
-      persons_quarter: this.numVal('qr-persons-quarter'), persons_ytd: this.calcPersonsYtd(q, this.numVal('qr-persons-quarter') || 0), persons_total: null,
-      data_source_note: this.val('qr-data-source'), demographics_age_gender: this.collectAgeGender(),
+      persons_quarter: this.numVal('qr-persons-quarter'), persons_ytd: this.calcPersonsYtd(q, this.numVal('qr-persons-quarter')), persons_total: null,
+      data_source_note: this.val('qr-data-source'), demographics_ethnicity_other_detail: this.val('qr-eth-other-detail') || null, demographics_age_gender: this.collectAgeGender(),
       demographics_ethnicity: this.collectSimpleDemo('eth'), demographics_language: this.collectSimpleDemo('lang'),
       narrative_text: this.val('qr-narrative-text'), narrative_submitted_by: this.val('qr-narrative-name'), narrative_date: this.val('qr-narrative-date') || null,
       updated_at: new Date().toISOString(), ...scope
@@ -1428,12 +1463,7 @@ const App = {
     if (d.qAge !== qPersons) errors.push('age');
     if (d.qEth !== qPersons) errors.push('eth');
     if (d.qLang !== qPersons) errors.push('lang');
-    if (d.qAge !== d.qEth || d.qAge !== d.qLang) errors.push('demoMismatch');
     if (d.yAge !== yPersons) errors.push('yAge');
-    if (d.yEth !== yPersons) errors.push('yEth');
-    if (d.yLang !== yPersons) errors.push('yLang');
-    if (d.yAge !== d.yEth || d.yAge !== d.yLang) errors.push('demoYtdMismatch');
-    this.updateDemographicValidationSummary();
     if ((this.numVal('scope-bedNightsOcc')||0) > (this.numVal('scope-bedNightsAvail')||0)) errors.push('bed');
     if ((this.numVal('scope-satSatisfied')||0) > (this.numVal('scope-satTotal')||0)) errors.push('survey');
     return errors;
@@ -1474,10 +1504,10 @@ const App = {
     const lang = this.normalizeLanguage(r.demographics_language || {});
     const langRows = this.languageKeys.map(k => `<tr><td>${this.escape(k)}</td><td>${lang[k]||0}</td><td>${this.calcSimpleDemoYtd(q,'demographics_language',k,lang[k]||0)}</td></tr>`).join('');
 
-    const scopeRows = this.scopeRows().map(([cat,k,label,mode,hint]) => {
-      const thisQuarter = mode === 'calcPersons' ? 'N/A' : (s[k] ?? '');
-      const ytd = mode === 'calcPersons' ? this.calcPersonsYtd(q) : (mode === 'ytd' ? this.calcScopeYtd(q,k) : 'Quarter only');
-      return `<tr><td>${this.escape(cat)}</td><td>${this.escape(label)}</td><td>${thisQuarter}</td><td>${ytd}</td></tr>`;
+    const scopeRows = Object.keys(this.scopeMap).map(k => {
+      const cumulative = ['newIntakes','bedNightsAvail','bedNightsOcc','phExits','exitsTemp','exitsInstitutional','exitsHomeless','exitsUnknown'].includes(k);
+      const ytd = cumulative ? this.calcScopeYtd(q,k) : 'Quarter only';
+      return `<tr><td>${this.scopeLabel(k)}</td><td>${s[k] ?? ''}</td><td>${ytd}</td></tr>`;
     }).join('');
 
     document.getElementById('print-report').innerHTML = `
@@ -1495,7 +1525,7 @@ const App = {
       </div>
       <div class="print-kpis">
         <div class="print-kpi"><div class="label">Persons Served</div><div class="value">${r.persons_quarter ?? ''}</div><div class="label">This quarter</div></div>
-        <div class="print-kpi"><div class="label">Persons Served YTD</div><div class="value">${this.calcPersonsYtd(q)}</div><div class="label">Contract year</div></div>
+        <div class="print-kpi"><div class="label">Persons Served YTD</div><div class="value">${r.persons_ytd ?? this.calcPersonsYtd(q)}</div><div class="label">Contract year</div></div>
         <div class="print-kpi"><div class="label">Occupancy</div><div class="value">${occupancy}</div><div class="label">Bed nights</div></div>
         <div class="print-kpi"><div class="label">PH Exits YTD</div><div class="value">${this.calcScopeYtd(q,'phExits')}</div><div class="label">Contract year</div></div>
       </div>
@@ -1504,7 +1534,7 @@ const App = {
       <div class="print-section"><h2>Demographics</h2><h3>Age & Gender</h3><table class="print-table"><thead><tr><th>Age</th><th>Qtr Male</th><th>Qtr Female</th><th>Qtr NB/GNC</th><th>Qtr Unknown</th><th>Qtr Total</th><th>YTD Total</th></tr></thead><tbody>${ageRows}</tbody></table>
       <h3>Ethnicity</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${ethRows}</tbody></table>
       <h3>Language</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${langRows}</tbody></table></div>
-      <div class="print-section page-break"><h2>Scope of Services</h2><table class="print-table"><thead><tr><th>Category</th><th>Metric</th><th>Quarter Count</th><th>Year-to-Date Count / Display</th></tr></thead><tbody>${scopeRows}</tbody></table></div>
+      <div class="print-section page-break"><h2>Scope of Services</h2><table class="print-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th></tr></thead><tbody>${scopeRows}</tbody></table></div>
       <div class="print-section"><h2>Narrative</h2><p>${this.escape(r.narrative_text || 'No narrative provided.')}</p></div>
       <div class="print-section"><h2>Roster Summary</h2><table class="print-table"><tr><td>Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>Unique Clients</td><td>${roster.unique_clients ?? ''}</td></tr><tr><td>Enrollments</td><td>${roster.enrollments ?? ''}</td></tr><tr><td>Households</td><td>${roster.households ?? ''}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
       <div class="print-section page-break"><h2>Non-Permanent Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
@@ -1530,10 +1560,8 @@ const App = {
     const order = ['Q1','Q2','Q3','Q4'];
     return order.slice(0, order.indexOf(q)+1);
   },
-  calcPersonsYtd(q, currentOverride=null) {
-    const prior = this.priorQuarters(q).reduce((sum, qq) => sum + Number(this.data.reports[qq]?.persons_quarter || 0), 0);
-    const current = currentOverride !== null ? Number(currentOverride || 0) : Number(this.data.reports[q]?.persons_quarter || 0);
-    return prior + current;
+  calcPersonsYtd(q) {
+    return this.thruQuarters(q).reduce((sum, qq) => sum + Number(this.data.reports[qq]?.persons_quarter || 0), 0);
   },
   calcScopeYtd(q,key,currentOverride=null) {
     const prior = this.priorQuarters(q).reduce((sum,qq) => sum + Number(this.reportScope(qq)[key] || 0),0);
@@ -1551,11 +1579,16 @@ const App = {
     return out;
   },
   calcSimpleDemoYtd(q,col,key,currentVal=0) {
-    const prior = this.priorQuarters(q).reduce((sum,qq) => sum + Number(this.data.reports[qq]?.[col]?.[key] || 0),0);
+    const prior = this.priorQuarters(q).reduce((sum,qq) => {
+      const obj = col === 'demographics_ethnicity'
+        ? this.normalizeEthnicity(this.data.reports[qq]?.[col] || {})
+        : this.normalizeLanguage(this.data.reports[qq]?.[col] || {});
+      return sum + Number(obj[key] || 0);
+    },0);
     return prior + Number(currentVal || 0);
   },
 
-  demographicTotals(q) {
+  demographicTotals  demographicTotals(q) {
     const r = this.data.reports[q] || {};
     const age = r.demographics_age_gender || {};
     const eth = this.normalizeEthnicity(r.demographics_ethnicity || {});
@@ -1574,42 +1607,8 @@ const App = {
     const qAge = Object.values(ageRows).reduce((s,row)=>s+this.sumDemoRow(row),0);
     const qEth = Object.values(eth).reduce((a,b)=>a+Number(b||0),0);
     const qLang = Object.values(lang).reduce((a,b)=>a+Number(b||0),0);
-    const priorTotals = this.priorQuarters(this.currentQuarter).reduce((acc,q)=>{
-      const t = this.demographicTotals(q);
-      acc.age += t.qAge; acc.eth += t.qEth; acc.lang += t.qLang;
-      return acc;
-    }, {age:0, eth:0, lang:0});
-    return {
-      qAge, qEth, qLang,
-      yAge: priorTotals.age + qAge,
-      yEth: priorTotals.eth + qEth,
-      yLang: priorTotals.lang + qLang
-    };
-  },
-
-
-  updateDemographicValidationSummary() {
-    const el = document.getElementById('demo-validation-summary');
-    if (!el) return;
-    const qPersons = this.numVal('qr-persons-quarter') || 0;
-    const yPersons = this.numVal('qr-persons-ytd') || 0;
-    const d = this.demographicTotalsFromForm();
-    const issues = [];
-    if (d.qAge !== qPersons) issues.push(`Age/Gender quarter total (${d.qAge}) does not match Persons Served This Quarter (${qPersons}).`);
-    if (d.qEth !== qPersons) issues.push(`Ethnicity quarter total (${d.qEth}) does not match Persons Served This Quarter (${qPersons}).`);
-    if (d.qLang !== qPersons) issues.push(`Language quarter total (${d.qLang}) does not match Persons Served This Quarter (${qPersons}).`);
-    if (d.qAge !== d.qEth || d.qAge !== d.qLang) issues.push(`Quarter demographic sections do not align: Age/Gender ${d.qAge}, Ethnicity ${d.qEth}, Language ${d.qLang}.`);
-    if (d.yAge !== yPersons) issues.push(`Age/Gender YTD total (${d.yAge}) does not match Persons Served YTD (${yPersons}).`);
-    if (d.yEth !== yPersons) issues.push(`Ethnicity YTD total (${d.yEth}) does not match Persons Served YTD (${yPersons}).`);
-    if (d.yLang !== yPersons) issues.push(`Language YTD total (${d.yLang}) does not match Persons Served YTD (${yPersons}).`);
-    if (d.yAge !== d.yEth || d.yAge !== d.yLang) issues.push(`YTD demographic sections do not align: Age/Gender ${d.yAge}, Ethnicity ${d.yEth}, Language ${d.yLang}.`);
-    el.classList.remove('warn','error');
-    if (!issues.length) {
-      el.textContent = `Demographic totals are aligned. Quarter total: ${qPersons}; YTD total: ${yPersons}.`;
-      return;
-    }
-    el.classList.add('error');
-    el.innerHTML = `<strong>Demographic totals need review.</strong><ul>${issues.map(i => `<li>${this.escape(i)}</li>`).join('')}</ul>`;
+    const yAge = this.priorQuarters(this.currentQuarter).reduce((sum,q)=>sum + this.demographicTotals(q).qAge,0) + qAge;
+    return { qAge, qEth, qLang, yAge };
   },
 
   collectAgeGender() {
@@ -1632,10 +1631,14 @@ const App = {
   normalizeEthnicity(obj) {
     const out = {};
     this.ethnicityKeys.forEach(k => out[k] = Number(obj[k] || 0));
-    if (obj.Other && !out['Other (Middle Eastern/North African)']) out['Other (Middle Eastern/North African)'] = Number(obj.Other || 0);
+    out['Asian/Pacific Islander'] += Number(obj['Asian or Asian American'] || 0);
+    out['American Indian / Alaska Native'] += Number(obj['American Indian, Alaska Native, or Indigenous'] || 0);
+    out['Middle Eastern / North African'] += Number(obj['Other (Middle Eastern/North African)'] || 0);
+    // Keep legacy "Other" as true standalone Other, not MENA.
+    out['Other'] += Number(obj['Other'] || 0);
     return out;
   },
-  normalizeLanguage(obj) {
+  normalizeLanguage  normalizeLanguage(obj) {
     const out = {};
     this.languageKeys.forEach(k => out[k] = Number(obj[k] || 0));
     return out;
@@ -1648,10 +1651,7 @@ const App = {
   formatDate(d) { return d ? new Date(d + (String(d).includes('T')?'':'T12:00:00')).toLocaleDateString() : '—'; },
   formatDateTime(d) { return d ? new Date(d).toLocaleString() : '—'; },
   escape(s) { return (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
-  scopeLabel(k) {
-    const row = this.scopeRows?.().find(r => r[1] === k);
-    return row ? row[2] : k.replace(/([A-Z])/g,' $1').replace(/^./, c => c.toUpperCase());
-  }
+  scopeLabel(k) { return k.replace(/([A-Z])/g,' $1').replace(/^./, c => c.toUpperCase()); }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
