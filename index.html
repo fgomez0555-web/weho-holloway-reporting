@@ -782,9 +782,35 @@ const App = {
     const exits = this.data.exits.filter(e => e.quarter === q);
     return [
       { label:'Quarterly Program Report', ok: !!r && this.reportLooksComplete(q), started: !!r, detail: this.reportLooksComplete(q) ? 'Ready' : (r ? 'Missing required fields or validation issues' : 'Not started'), action:'quarterly' },
-      { label:'Client Roster', ok: !!roster && !!roster.unique_clients && !!roster.period_start && !!roster.period_end, started: !!roster, detail: roster ? `${roster.unique_clients || 0} unique clients` : 'Not uploaded/entered', action:'roster' },
+      { label:'Client Roster', ok: this.rosterLooksComplete(q), started: !!roster, detail: roster ? this.rosterMovementDetail(roster) : 'Not uploaded/entered', action:'roster' },
       { label:'Non-Permanent Exit Detail', ok: exits.length > 0 || this.data.bundles[q]?.no_exits === true || ['accepted'].includes(this.bundleStatus(q)), started: exits.length > 0, detail: exits.length ? `${exits.length} exit row(s)` : 'Enter exits or mark no exits', action:'exits' }
     ];
+  },
+
+  rosterLooksComplete(q) {
+    const r = this.data.rosters[q];
+    if (!r) return false;
+    const hasPeriod = !!r.period_start && !!r.period_end;
+    const vals = ['start_count','intakes_count','exits_count','end_count'].map(k => r[k]);
+    const hasMovement = vals.every(v => v !== null && v !== undefined && v !== '');
+    return hasPeriod && hasMovement && this.rosterMovementTies(r);
+  },
+
+  rosterMovementTies(r={}) {
+    const start = Number(r.start_count || 0);
+    const intakes = Number(r.intakes_count || 0);
+    const exits = Number(r.exits_count || 0);
+    const end = Number(r.end_count || 0);
+    return start + intakes - exits === end;
+  },
+
+  rosterMovementDetail(r={}) {
+    const start = Number(r.start_count || 0);
+    const intakes = Number(r.intakes_count || 0);
+    const exits = Number(r.exits_count || 0);
+    const end = Number(r.end_count || 0);
+    const formula = `${start} + ${intakes} - ${exits} = ${end}`;
+    return this.rosterMovementTies(r) ? `Movement ties out: ${formula}` : `Check movement: ${formula}`;
   },
 
   reportLooksComplete(q) {
@@ -1238,26 +1264,47 @@ const App = {
   renderRosterForm() {
     const q = this.currentQuarter;
     const r = this.data.rosters[q] || {};
+    const ties = this.rosterMovementTies(r);
     document.getElementById('roster-meta').innerHTML = `${q} · ${this.quarters[q].period} · ${this.statusBadge(this.bundleStatus(q))}`;
-    document.getElementById('roster-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">📁</div><div><strong>HMIS Export</strong><br>Upload or summarize the HMIS-generated roster for clients active during the quarter.</div></div>
-      <div class="form-section"><div class="form-section-title">Upload HMIS Export</div>
-        <label class="upload-zone"><input type="file" id="roster-file"><div style="font-size:30px;" aria-hidden="true">📁</div><div id="roster-file-label"><strong>Click to select HMIS export</strong><br><span class="field-hint">Accepted formats: Any file type</span></div></label>
+    document.getElementById('roster-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">📁</div><div><strong>Client Roster and Movement Summary</strong><br>Upload the roster backup file and summarize participant movement during the reporting period. The movement summary should reconcile: People at Start + Intakes − Exits = People at End.</div></div>
+      <div class="form-section"><div class="form-section-title">Upload Roster Backup</div>
+        <label class="upload-zone"><input type="file" id="roster-file"><div style="font-size:30px;" aria-hidden="true">📁</div><div id="roster-file-label"><strong>Click to select roster file</strong><br><span class="field-hint">Accepted formats: Any file type, including Excel, CSV, PDF, Word, image, or ZIP.</span></div></label>
       </div>
-      <div class="form-section"><div class="form-section-title">Roster Period & Summary</div>
+      <div class="form-section"><div class="form-section-title">Roster Period</div>
         <div class="form-row">${this.field('roster-start','Period Start',r.period_start || '','date',true)}${this.field('roster-end','Period End',r.period_end || '','date',true)}</div>
-        <div class="form-row three">${this.field('roster-unique','Unique Clients',r.unique_clients ?? '','number',true)}${this.field('roster-enroll','Enrollments',r.enrollments ?? '','number')}${this.field('roster-households','Households',r.households ?? '','number')}</div>
-        <div class="field-group"><label class="field-label">Notes</label><textarea class="field-textarea" id="roster-notes">${this.escape(r.notes || '')}</textarea></div>
-      </div>`;
+      </div>
+      <div class="form-section"><div class="form-section-title">Client Movement Summary</div>
+        <div class="form-row">${this.field('roster-start-count','People in Program at Start of Quarter',r.start_count ?? '','number',true)}${this.field('roster-intakes-count','Intakes During Quarter',r.intakes_count ?? '','number',true)}</div>
+        <div class="form-row">${this.field('roster-exits-count','Exits During Quarter',r.exits_count ?? '','number',true)}${this.field('roster-end-count','People in Program at End of Quarter',r.end_count ?? '','number',true)}</div>
+        <div id="roster-reconcile" class="notice ${ties ? 'green' : 'amber'}" style="margin-top:10px;"><div aria-hidden="true">${ties ? '✅' : '⚠️'}</div><div><strong>${ties ? 'Roster movement ties out.' : 'Check roster movement.'}</strong><br><span>${this.escape(this.rosterMovementDetail(r))}</span></div></div>
+        <p class="field-hint">This summary is intended as a quick reconciliation check against the uploaded roster file.</p>
+      </div>
+      <div class="form-section"><div class="form-section-title">Optional Notes</div><div class="field-group"><label class="field-label">Notes</label><textarea class="field-textarea" id="roster-notes" placeholder="Optional: describe roster source, export date, or reconciliation notes.">${this.escape(r.notes || '')}</textarea></div></div>`;
     document.querySelectorAll('#modal-roster input, #modal-roster textarea').forEach(el => {
-      el.addEventListener('input', () => this.markDirty('roster'));
+      el.addEventListener('input', () => { this.markDirty('roster'); this.updateRosterReconciliation(); });
       el.addEventListener('blur', () => { this.validateField(el); this.autosave('roster'); });
     });
     document.getElementById('roster-file').addEventListener('change', e => {
       const file = e.target.files?.[0];
-      if (file) document.getElementById('roster-file-label').innerHTML = `<strong>Selected:</strong> ${this.escape(file.name)}`;
+      if (file) document.getElementById('roster-file-label').innerHTML = `<strong>Selected:</strong> ${this.escape(file.name)}<br><span class="field-hint">Any file type accepted</span>`;
       this.markDirty('roster');
     });
     this.updateReadOnlyStates('roster');
+    this.updateRosterReconciliation();
+  },
+
+  updateRosterReconciliation() {
+    const box = document.getElementById('roster-reconcile');
+    if (!box) return;
+    const r = {
+      start_count: this.numVal('roster-start-count'),
+      intakes_count: this.numVal('roster-intakes-count'),
+      exits_count: this.numVal('roster-exits-count'),
+      end_count: this.numVal('roster-end-count')
+    };
+    const ties = this.rosterMovementTies(r);
+    box.className = `notice ${ties ? 'green' : 'amber'}`;
+    box.innerHTML = `<div aria-hidden="true">${ties ? '✅' : '⚠️'}</div><div><strong>${ties ? 'Roster movement ties out.' : 'Check roster movement.'}</strong><br><span>${this.escape(this.rosterMovementDetail(r))}</span></div>`;
   },
 
   renderExitsForm() {
@@ -1367,7 +1414,8 @@ const App = {
     const payload = {
       program_id:this.program.id, quarter:q, fiscal_year:this.fiscalYear,
       file_path, file_name, period_start:this.val('roster-start') || null, period_end:this.val('roster-end') || null,
-      unique_clients:this.numVal('roster-unique'), enrollments:this.numVal('roster-enroll'), households:this.numVal('roster-households'),
+      unique_clients:this.numVal('roster-end-count'), enrollments:this.numVal('roster-intakes-count'), households:null,
+      start_count:this.numVal('roster-start-count'), intakes_count:this.numVal('roster-intakes-count'), exits_count:this.numVal('roster-exits-count'), end_count:this.numVal('roster-end-count'),
       notes:this.val('roster-notes'), status:'uploaded', uploaded_by:this.profile.id
     };
     const { data, error } = await this.sb.from('client_rosters').upsert(payload, { onConflict:'program_id,quarter,fiscal_year' }).select().single();
@@ -1534,9 +1582,9 @@ const App = {
       <div class="print-section"><h2>Demographics</h2><h3>Age & Gender</h3><table class="print-table"><thead><tr><th>Age</th><th>Qtr Male</th><th>Qtr Female</th><th>Qtr NB/GNC</th><th>Qtr Unknown</th><th>Qtr Total</th><th>YTD Total</th></tr></thead><tbody>${ageRows}</tbody></table>
       <h3>Ethnicity</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${ethRows}</tbody></table>
       <h3>Language</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${langRows}</tbody></table></div>
-      <div class="print-section page-break"><h2>Scope of Services</h2><table class="print-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th></tr></thead><tbody>${scopeRows}</tbody></table></div>
+      <div class="print-section page-break"><h2>Scope of Services</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section summarizes quarterly performance measures reported for the Holloway Interim Housing Program. Cumulative fields are shown year-to-date for the contract year; snapshot fields are displayed for the selected quarter only.</p><table class="print-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th></tr></thead><tbody>${scopeRows}</tbody></table></div>
       <div class="print-section"><h2>Narrative</h2><p>${this.escape(r.narrative_text || 'No narrative provided.')}</p></div>
-      <div class="print-section"><h2>Roster Summary</h2><table class="print-table"><tr><td>Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>Unique Clients</td><td>${roster.unique_clients ?? ''}</td></tr><tr><td>Enrollments</td><td>${roster.enrollments ?? ''}</td></tr><tr><td>Households</td><td>${roster.households ?? ''}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
+      <div class="print-section"><h2>Client Movement Summary</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">Roster movement should reconcile as: People at Start + Intakes During Quarter − Exits During Quarter = People at End of Quarter.</p><table class="print-table"><tr><td>Roster Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>People in Program at Start of Quarter</td><td>${roster.start_count ?? ''}</td></tr><tr><td>Intakes During Quarter</td><td>${roster.intakes_count ?? ''}</td></tr><tr><td>Exits During Quarter</td><td>${roster.exits_count ?? ''}</td></tr><tr><td>People in Program at End of Quarter</td><td>${roster.end_count ?? ''}</td></tr><tr><td>Movement Reconciliation</td><td>${this.rosterMovementTies(roster) ? '✓ Movement ties out' : '⚠ Review movement totals'}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></table></div>
       <div class="print-section page-break"><h2>Non-Permanent Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
       <div class="print-section"><h2>City Review</h2><p>${this.escape(b.city_review_notes || 'No City review notes.')}</p></div>
       <div class="print-footer">Prepared for City of West Hollywood Human Services Division · Holloway Reporting Portal</div>`;
