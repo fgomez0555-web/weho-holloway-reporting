@@ -4058,116 +4058,32 @@ function populateQuarterlyForm(q, ro) {
 
 
 
-<style>
-/* Role-split dashboard polish */
-.role-workspace { margin-bottom: 24px; }
-.workspace-hero { background: linear-gradient(135deg, #1B2F5B 0%, #243a72 100%); color: #fff; border-radius: var(--radius-lg); padding: 22px 24px; border-bottom: 4px solid var(--gold); box-shadow: var(--shadow); margin-bottom: 18px; }
-.workspace-hero h2 { font-family: 'DM Serif Display', serif; font-size: 24px; font-weight: 400; margin: 0 0 4px; }
-.workspace-hero p { color: rgba(255,255,255,.78); margin: 0; max-width: 760px; }
-.workspace-tabs { display:flex; gap:8px; margin: 14px 0 18px; flex-wrap: wrap; }
-.workspace-tab { border:1px solid var(--border); background:#fff; color:var(--navy); border-radius: 20px; padding: 8px 14px; font-size:13px; font-weight:600; cursor:pointer; }
-.workspace-tab.active { background: var(--navy); color:#fff; border-color: var(--navy); box-shadow: var(--shadow); }
-.admin-grid { display:grid; grid-template-columns: 1.4fr .9fr; gap:18px; margin-bottom:22px; }
-.queue-row { display:grid; grid-template-columns: 70px 1fr 120px 130px 270px; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--gray-100); }
-.queue-row:last-child { border-bottom:none; }
-.queue-quarter { font-family:'DM Serif Display',serif; font-size:20px; color:var(--navy); }
-.queue-meta { font-size:12px; color:var(--gray-600); }
-.action-group { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
-.status-strip { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
-.status-tile { border:1px solid var(--border); background:#fff; border-radius:var(--radius-lg); padding:14px; cursor:pointer; transition: all .15s; }
-.status-tile:hover { border-color: var(--navy); transform: translateY(-1px); }
-.status-tile.active { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,74,.18); }
-.status-tile .q { font-family:'DM Serif Display',serif; font-size:21px; color:var(--navy); }
-.agency-step-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin: 14px 0 20px; }
-.agency-step { background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; box-shadow:var(--shadow); }
-.agency-step strong { color:var(--navy); display:block; margin-bottom:4px; }
-.agency-step span { color:var(--gray-600); font-size:12px; }
-.hidden-role-block { display:none !important; }
-@media(max-width:1000px){ .admin-grid{grid-template-columns:1fr;} .queue-row{grid-template-columns:1fr;} .action-group{justify-content:flex-start;} .agency-step-grid,.status-strip{grid-template-columns:1fr 1fr;} }
-@media(max-width:650px){ .agency-step-grid,.status-strip{grid-template-columns:1fr;} }
-</style>
-
 <script>
-/* Role-split dashboard: distinct Agency and City Admin workspaces. */
+/* ============================================================
+   STABLE ROLE LANDING PATCH
+   This intentionally keeps the existing dashboard/rendering code intact.
+   City Admins get a review landing panel; agency users keep the standard
+   reporting workspace. This avoids the broken full DOM replacement approach.
+   ============================================================ */
 (function(){
-  const QUARTER_ORDER = ['Q1','Q2','Q3','Q4'];
-  const FISCAL_YEAR = window.FISCAL_YEAR || 'FY2025-26';
-  let roleSplitReady = false;
-  let activeAdminTab = 'queue';
-
   function $(id){ return document.getElementById(id); }
-  function isAdmin(){ return window._userProfile?.role === 'city_admin' || window._userProfile?.access_type === 'city_admin'; }
-  function niceStatus(s){
-    const v = String(s || 'incomplete').toLowerCase();
-    return ({accepted:'Accepted', submitted:'Submitted', resubmitted:'Resubmitted', under_review:'Under Review', review:'Under Review', revision_requested:'Revision Requested', returned:'Returned for Revisions', voided:'Voided', incomplete:'Incomplete', pending:'In Progress', draft:'Draft', upcoming:'Upcoming'})[v] || v.replace(/_/g,' ');
+  function cityAdmin(){ return window._userProfile?.role === 'city_admin' || window._userProfile?.access_type === 'city_admin'; }
+  function statusText(s){
+    const v=String(s||'incomplete').toLowerCase();
+    return ({accepted:'Accepted',submitted:'Submitted',resubmitted:'Resubmitted',under_review:'Under Review',review:'Under Review',revision_requested:'Revision Requested',returned:'Returned for Revisions',voided:'Voided',incomplete:'Incomplete',pending:'In Progress',draft:'Draft',upcoming:'Upcoming'})[v] || v.replace(/_/g,' ');
   }
-  function badgeClass(s){
-    const v = String(s || '').toLowerCase();
-    if (v === 'accepted') return 'badge-green';
-    if (['submitted','resubmitted','under_review','review'].includes(v)) return 'badge-navy';
-    if (['revision_requested','returned','voided'].includes(v)) return 'badge-red';
-    return 'badge-amber';
+  function badge(s){
+    const v=String(s||'').toLowerCase();
+    if(v==='accepted') return 'badge badge-green';
+    if(['submitted','resubmitted','under_review','review'].includes(v)) return 'badge badge-navy';
+    if(['revision_requested','returned','voided'].includes(v)) return 'badge badge-red';
+    return 'badge badge-amber';
   }
-  function bundleFor(q){ return window._bundlesByQuarter?.[q] || {}; }
-  function qData(q){ return window.QUARTERS?.[q] || {}; }
-  function bundleStatus(q){
-    const b = bundleFor(q), qd = qData(q);
-    return b.city_review_status || b.bundle_status || qd.status || 'incomplete';
-  }
-  function getMain(){ return document.querySelector('.main'); }
-
-  function ensurePanels(){
-    const main = getMain(); if (!main) return;
-    if (!$('city-admin-workspace')) {
-      const admin = document.createElement('section');
-      admin.id = 'city-admin-workspace';
-      admin.className = 'role-workspace hidden-role-block';
-      admin.innerHTML = '<div id="city-admin-workspace-content"></div>';
-      main.insertBefore(admin, main.firstElementChild);
-    }
-    if (!$('agency-workspace')) {
-      const agency = document.createElement('section');
-      agency.id = 'agency-workspace';
-      agency.className = 'role-workspace hidden-role-block';
-      agency.innerHTML = '<div id="agency-workspace-content"></div>';
-      main.insertBefore(agency, main.firstElementChild);
-    }
-  }
-
-  function setDefaultContentVisibility(showReporter){
-    const main = getMain(); if (!main) return;
-    const children = Array.from(main.children);
-    children.forEach(el => {
-      if (el.id === 'city-admin-workspace' || el.id === 'agency-workspace') return;
-      el.classList.toggle('hidden-role-block', !showReporter);
-    });
-  }
-
-  function updateSidebar(){
-    const sidebar = document.querySelector('.sidebar'); if (!sidebar) return;
-    const sections = sidebar.querySelectorAll('.sidebar-section');
-    const reportingSection = sections[0];
-    const adminSection = $('admin-sidebar-section');
-    if (isAdmin()) {
-      if (reportingSection) reportingSection.innerHTML = `
-        <div class="sidebar-label">City Admin</div>
-        <div class="sidebar-item active" id="nav-admin-queue" onclick="showAdminWorkspace('queue')"><span class="si-icon" aria-hidden="true">📝</span> Review Queue</div>
-        <div class="sidebar-item" id="nav-admin-quarter" onclick="showAdminWorkspace('quarter')"><span class="si-icon" aria-hidden="true">⊞</span> Quarter Detail</div>
-        <div class="sidebar-item" id="nav-admin-access" onclick="showAdminWorkspace('access')"><span class="si-icon" aria-hidden="true">🔐</span> Access Management</div>`;
-      if (adminSection) adminSection.style.display = 'none';
-    } else {
-      if (reportingSection) reportingSection.innerHTML = `
-        <div class="sidebar-label">Agency Workspace</div>
-        <div class="sidebar-item active" onclick="showAgencyWorkspace()"><span class="si-icon" aria-hidden="true">⊞</span> Dashboard</div>
-        <div class="sidebar-item" onclick="openForm('quarterly')"><span class="si-icon" aria-hidden="true">📋</span> Quarterly Report</div>
-        <div class="sidebar-item" onclick="openForm('roster')"><span class="si-icon" aria-hidden="true">👥</span> Client Roster</div>
-        <div class="sidebar-item" onclick="openForm('exits')"><span class="si-icon" aria-hidden="true">🚪</span> Exit Detail</div>`;
-      if (adminSection) adminSection.style.display = 'none';
-    }
-  }
-
-  async function refreshBundlesQuietly(){
-    if (typeof window.refreshBundleMap === 'function') { try { await window.refreshBundleMap(); } catch(e){} return; }
+  function bundle(q){ return window._bundlesByQuarter?.[q] || {}; }
+  function bStatus(q){ const b=bundle(q); return b.city_review_status || b.bundle_status || window.QUARTERS?.[q]?.status || 'incomplete'; }
+  function quarters(){ return ['Q1','Q2','Q3','Q4']; }
+  async function reloadBundles(){
+    if (typeof window.refreshBundleMap === 'function') { try { await window.refreshBundleMap(); return; } catch(e){} }
     if (!window.sb) return;
     let pid = window._programId;
     if (!pid) {
@@ -4175,117 +4091,92 @@ function populateQuarterlyForm(q, ro) {
       pid = data?.id; if (pid) window._programId = pid;
     }
     if (!pid) return;
-    const {data} = await window.sb.from('submission_bundles').select('*').eq('program_id', pid).eq('fiscal_year', FISCAL_YEAR).order('quarter');
-    window._bundlesByQuarter = {}; (data || []).forEach(b => window._bundlesByQuarter[b.quarter] = b);
+    const {data} = await window.sb.from('submission_bundles').select('*').eq('program_id', pid).eq('fiscal_year', 'FY2025-26').order('quarter');
+    window._bundlesByQuarter = {};
+    (data||[]).forEach(x => window._bundlesByQuarter[x.quarter]=x);
   }
-
-  function adminQueueRows(){
-    return QUARTER_ORDER.map(q => ({ q, b: bundleFor(q), qd: qData(q), status: bundleStatus(q) }))
-      .sort((a,b) => {
-        const priority = st => ['submitted','resubmitted','under_review','review'].includes(String(st).toLowerCase()) ? 0 : (String(st).toLowerCase()==='revision_requested' ? 1 : 2);
-        return priority(a.status) - priority(b.status) || QUARTER_ORDER.indexOf(a.q) - QUARTER_ORDER.indexOf(b.q);
-      });
-  }
-
-  function renderAdminWorkspace(tab=activeAdminTab){
-    ensurePanels();
-    activeAdminTab = tab;
-    $('city-admin-workspace')?.classList.remove('hidden-role-block');
-    $('agency-workspace')?.classList.add('hidden-role-block');
-    setDefaultContentVisibility(tab === 'quarter');
-    ['nav-admin-queue','nav-admin-quarter','nav-admin-access'].forEach(id => $(id)?.classList.remove('active'));
-    const nav = tab === 'queue' ? 'nav-admin-queue' : tab === 'access' ? 'nav-admin-access' : 'nav-admin-quarter';
-    $(nav)?.classList.add('active');
-    const title = $('dash-title'); if (title) title.textContent = tab === 'quarter' ? 'Quarter Detail' : 'City Admin Dashboard';
-    const sub = document.querySelector('.page-subtitle'); if (sub && tab === 'quarter') sub.textContent = 'Review the selected quarter in read-only context or open forms as needed.';
-
-    const c = $('city-admin-workspace-content'); if (!c) return;
-    if (tab === 'access') {
-      c.innerHTML = `<div class="workspace-hero"><h2>Access Management</h2><p>Add, update, or deactivate Holloway portal users. New approved users can request a secure magic link from the login screen.</p></div><div id="role-split-access-anchor"></div>`;
-      if (typeof window.showAccessManagement === 'function') window.showAccessManagement();
-      return;
+  function ensureAdminLanding(){
+    const main=document.querySelector('.main'); if(!main) return null;
+    let panel=$('stable-admin-landing');
+    if(!panel){
+      panel=document.createElement('section');
+      panel.id='stable-admin-landing';
+      panel.className='card';
+      panel.style.marginBottom='20px';
+      main.insertBefore(panel, main.firstElementChild);
     }
-    if (tab === 'quarter') {
-      c.innerHTML = `<div class="workspace-hero"><h2>${window.currentQuarter || 'Q1'} Quarter Detail</h2><p>Use this view to inspect the selected quarter. Admin actions remain available from Review Queue.</p></div>`;
-      return;
+    return panel;
+  }
+  function ensureAgencyNotice(){
+    const main=document.querySelector('.main'); if(!main) return null;
+    let panel=$('stable-agency-landing');
+    if(!panel){
+      panel=document.createElement('section');
+      panel.id='stable-agency-landing';
+      panel.className='notice navy';
+      panel.style.marginBottom='20px';
+      main.insertBefore(panel, main.firstElementChild);
     }
-
-    const rows = adminQueueRows();
-    const needsReview = rows.filter(r => ['submitted','resubmitted','under_review','review'].includes(String(r.status).toLowerCase()));
-    c.innerHTML = `
-      <div class="workspace-hero"><h2>City Admin Review Queue</h2><p>Review submitted Holloway reporting bundles, request revisions, accept completed quarters, and monitor overall status.</p></div>
-      <div class="workspace-tabs"><button class="workspace-tab active" onclick="showAdminWorkspace('queue')">Review Queue</button><button class="workspace-tab" onclick="showAdminWorkspace('quarter')">Quarter Detail</button><button class="workspace-tab" onclick="showAdminWorkspace('access')">Access Management</button></div>
-      <div class="admin-grid">
-        <div class="card"><div class="card-header"><div><div class="card-title">Needs City Review</div><div class="page-subtitle">Submitted or resubmitted bundles appear first.</div></div><button class="btn btn-ghost btn-sm" onclick="refreshAdminWorkspace()">Refresh</button></div>
-          <div class="card-body">${needsReview.length ? needsReview.map(queueRowHtml).join('') : `<div class="notice green"><span aria-hidden="true">✅</span><div><strong>No bundles are awaiting review.</strong><br>Use the status overview to open a specific quarter.</div></div>`}</div>
-        </div>
-        <div class="card"><div class="card-header"><div class="card-title">Quarter Status Overview</div></div><div class="card-body"><div class="status-strip">${rows.map(statusTileHtml).join('')}</div></div></div>
-      </div>
-      <div class="card"><div class="card-header"><div class="card-title">All Holloway Bundles</div></div><div class="card-body" style="overflow-x:auto;"><table class="svc-table"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revisions</th><th>Actions</th></tr></thead><tbody>${rows.map(tableRowHtml).join('')}</tbody></table></div></div>`;
+    return panel;
   }
-
-  function queueRowHtml(r){
-    return `<div class="queue-row"><div class="queue-quarter">${r.q}</div><div><strong>${r.qd.period || '—'}</strong><div class="queue-meta">Due ${r.qd.due || r.b.due_date || '—'} · ${r.b.city_review_notes ? 'City notes on file' : 'No City notes'}</div></div><div><span class="badge ${badgeClass(r.status)}">${niceStatus(r.status)}</span></div><div class="queue-meta">${r.b.submitted_at ? new Date(r.b.submitted_at).toLocaleString() : 'Not submitted'}</div><div class="action-group">${actionButtons(r.q, r.status)}</div></div>`;
+  function actionButtons(q){
+    const st=String(bStatus(q)||'').toLowerCase();
+    const accepted=st==='accepted';
+    return `<button class="btn btn-ghost btn-sm" onclick="setQuarter('${q}');openForm('quarterly')">View</button>
+      <button class="btn btn-gold btn-sm" ${accepted?'disabled':''} onclick="adminAcceptQuarter('${q}')">Accept</button>
+      <button class="btn btn-ghost btn-sm" ${accepted?'disabled':''} onclick="adminRequestRevision('${q}')">Request Revisions</button>
+      <button class="btn btn-ghost btn-sm" onclick="voidSubmission('${q}')">Void</button>`;
   }
-  function statusTileHtml(r){
-    const active = r.q === (window.currentQuarter || 'Q1') ? ' active' : '';
-    return `<div class="status-tile${active}" onclick="setQuarter('${r.q}');showAdminWorkspace('quarter')"><div class="q">${r.q}</div><div><span class="badge ${badgeClass(r.status)}">${niceStatus(r.status)}</span></div><div class="queue-meta" style="margin-top:6px;">${r.qd.period || ''}</div></div>`;
-  }
-  function tableRowHtml(r){
-    return `<tr><td><strong>${r.q}</strong></td><td>${r.qd.period || '—'}</td><td><span class="badge ${badgeClass(r.status)}">${niceStatus(r.status)}</span></td><td>${r.b.submitted_at ? new Date(r.b.submitted_at).toLocaleDateString() : '—'}</td><td>${r.b.revision_count || 0}</td><td><div class="action-group" style="justify-content:flex-start;">${actionButtons(r.q, r.status)}</div></td></tr>`;
-  }
-  function actionButtons(q, status){
-    const accepted = String(status || '').toLowerCase() === 'accepted';
-    return `<button class="btn btn-ghost btn-sm" onclick="setQuarter('${q}');showAdminWorkspace('quarter');openForm('quarterly')">View</button><button class="btn btn-gold btn-sm" ${accepted?'disabled':''} onclick="adminAcceptQuarter('${q}')">Accept</button><button class="btn btn-ghost btn-sm" ${accepted?'disabled':''} onclick="adminRequestRevision('${q}')">Request Revisions</button><button class="btn btn-ghost btn-sm" onclick="voidSubmission('${q}')">Void</button>`;
-  }
-
-  function renderAgencyWorkspace(){
-    ensurePanels();
-    $('agency-workspace')?.classList.remove('hidden-role-block');
-    $('city-admin-workspace')?.classList.add('hidden-role-block');
-    setDefaultContentVisibility(true);
-    const q = window.currentQuarter || 'Q1'; const qd = qData(q); const st = bundleStatus(q);
-    const c = $('agency-workspace-content'); if (!c) return;
-    c.innerHTML = `<div class="workspace-hero"><h2>Agency Reporting Workspace</h2><p>Complete the ${q} reporting package for Holloway. Work through the required components, resolve validation items, and submit the quarter when all sections are ready.</p></div>
-      <div class="agency-step-grid"><div class="agency-step"><strong>1. Quarterly Report</strong><span>Enter service metrics, demographics, and narrative.</span></div><div class="agency-step"><strong>2. Client Roster</strong><span>Upload the HMIS roster and enter summary counts.</span></div><div class="agency-step"><strong>3. Exit Detail</strong><span>Confirm non-permanent exits or indicate none.</span></div><div class="agency-step"><strong>4. Submit Package</strong><span>Submit or resubmit the complete quarter to the City.</span></div></div>
-      <div class="notice navy"><span aria-hidden="true">ℹ️</span><div><strong>${q}: ${niceStatus(st)}</strong><br>${qd.period || ''} ${qd.due ? '· Due ' + qd.due : ''}</div></div>`;
-  }
-
-  window.showAdminWorkspace = async function(tab='queue'){
-    await refreshBundlesQuietly();
-    updateSidebar();
-    renderAdminWorkspace(tab);
+  window.renderStableRoleLanding = async function renderStableRoleLanding(){
+    await reloadBundles();
+    const admin=ensureAdminLanding(); const agency=ensureAgencyNotice();
+    if(cityAdmin()){
+      if(agency) agency.style.display='none';
+      if(admin){
+        admin.style.display='block';
+        const rows=quarters().map(q=>({q, qd:window.QUARTERS?.[q]||{}, b:bundle(q), st:bStatus(q)}));
+        const reviewCount=rows.filter(r=>['submitted','resubmitted','under_review','review'].includes(String(r.st).toLowerCase())).length;
+        admin.innerHTML=`<div class="card-header"><div><div class="card-title">City Admin Review Queue</div><div class="page-subtitle">${reviewCount ? reviewCount + ' bundle(s) need City review.' : 'No bundles currently require City review.'} Use View for quarter detail, or act directly below.</div></div><button class="btn btn-ghost btn-sm" onclick="renderStableRoleLanding()">Refresh</button></div>
+        <div class="card-body" style="overflow-x:auto;"><table class="svc-table"><thead><tr><th>Quarter</th><th>Period</th><th>Status</th><th>Submitted</th><th>Revisions</th><th>Actions</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${r.q}</strong></td><td>${r.qd.period||'—'}</td><td><span class="${badge(r.st)}">${statusText(r.st)}</span></td><td>${r.b.submitted_at?new Date(r.b.submitted_at).toLocaleDateString():'—'}</td><td>${r.b.revision_count||0}</td><td style="white-space:nowrap;">${actionButtons(r.q)}</td></tr>`).join('')}</tbody></table></div>`;
+      }
+    } else {
+      if(admin) admin.style.display='none';
+      if(agency){
+        const q=window.currentQuarter||'Q3';
+        agency.style.display='flex';
+        agency.innerHTML=`<span aria-hidden="true">ℹ️</span><div><strong>Agency Reporting Workspace</strong><br>Complete the ${q} Holloway reporting package: Quarterly Report, Client Roster, and Exit Detail. Use the readiness checklist below before submitting.</div>`;
+      }
+    }
   };
-  window.refreshAdminWorkspace = async function(){ await refreshBundlesQuietly(); renderAdminWorkspace(activeAdminTab); };
-  window.showAgencyWorkspace = async function(){ await refreshBundlesQuietly(); updateSidebar(); renderAgencyWorkspace(); };
-  window.showDashboardView = function(){ if (isAdmin()) window.showAdminWorkspace('queue'); else window.showAgencyWorkspace(); };
-
-  const originalSetQuarter = window.setQuarter;
-  if (typeof originalSetQuarter === 'function') {
+  const prevSetQuarter = window.setQuarter;
+  if (typeof prevSetQuarter === 'function') {
     window.setQuarter = function(q){
-      originalSetQuarter(q);
-      setTimeout(() => { if (isAdmin() && activeAdminTab !== 'quarter') renderAdminWorkspace(activeAdminTab); else if (!isAdmin()) renderAgencyWorkspace(); }, 80);
+      prevSetQuarter.apply(this, arguments);
+      setTimeout(()=>{ try { window.renderStableRoleLanding(); } catch(e){} }, 100);
     };
   }
-  const originalLoadAllData = window.loadAllData;
-  if (typeof originalLoadAllData === 'function') {
-    window.loadAllData = async function(){
-      const result = await originalLoadAllData.apply(this, arguments);
-      await refreshBundlesQuietly();
-      return result;
+  const prevEnter = window.enterApp;
+  if (typeof prevEnter === 'function') {
+    window.enterApp = async function(userId){
+      await prevEnter.apply(this, arguments);
+      await window.renderStableRoleLanding();
     };
   }
-
-  function initRoleSplit(){
-    if (roleSplitReady || !window._userProfile) return;
-    roleSplitReady = true;
-    ensurePanels();
-    updateSidebar();
-    if (isAdmin()) window.showAdminWorkspace('queue'); else window.showAgencyWorkspace();
+  const prevAccept = window.adminAcceptQuarter;
+  if (typeof prevAccept === 'function') {
+    window.adminAcceptQuarter = async function(q){ await prevAccept.apply(this, arguments); await window.renderStableRoleLanding(); };
   }
-  window.addEventListener('load', () => {
-    const timer = setInterval(() => { if (window._userProfile) { clearInterval(timer); initRoleSplit(); } }, 250);
-    setTimeout(() => clearInterval(timer), 10000);
+  const prevRev = window.adminRequestRevision;
+  if (typeof prevRev === 'function') {
+    window.adminRequestRevision = async function(q){ await prevRev.apply(this, arguments); await window.renderStableRoleLanding(); };
+  }
+  const prevVoid = window.voidSubmission;
+  if (typeof prevVoid === 'function') {
+    window.voidSubmission = async function(q){ const r=await prevVoid.apply(this, arguments); await window.renderStableRoleLanding(); return r; };
+  }
+  window.addEventListener('load', ()=>{
+    const t=setInterval(()=>{ if(window._userProfile){ clearInterval(t); window.renderStableRoleLanding(); } },250);
+    setTimeout(()=>clearInterval(t),10000);
   });
 })();
 </script>
