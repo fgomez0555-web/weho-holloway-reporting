@@ -1110,11 +1110,11 @@ const App = {
 
   renderReadinessPanel(q) {
     const readiness = this.readiness(q);
-    const allGreen = readiness.every(x => x.ok);
+    const allGreen = readiness.every(x => x.submitReady ?? x.ok);
     return `<div class="section-label">Submission Readiness — ${q}</div>
       <div class="card"><div class="card-body">
         ${readiness.map(item => `<div class="readiness-row">
-          <div class="readiness-left"><span class="status-icon" aria-hidden="true">${item.ok?'✅':item.started?'⚠':'⚪'}</span><div><strong>${item.label}</strong><br><span style="font-size:12px;color:var(--gray-400);">${item.detail}</span></div></div>
+          <div class="readiness-left"><span class="status-icon" aria-hidden="true">${(item.visualOk ?? item.ok)?'✅':item.started?'⚠':'⚪'}</span><div><strong>${item.label}</strong><br><span style="font-size:12px;color:var(--gray-400);">${item.detail}</span></div></div>
           ${item.action && (this.canEditQuarter() || this.isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-open="${item.action}">Open</button>` : ''}
         </div>`).join('')}
         ${this.canSign() ? `<button class="btn btn-gold" id="btn-submit-bundle" data-action="submit-bundle" data-quarter="${q}" ${allGreen && !this.quarterLocked(q) ? '' : 'disabled'}>Submit Quarter to City</button>` : `<span class="field-hint">Only an authorized signer can submit the quarter to the City.</span>`}
@@ -1122,12 +1122,41 @@ const App = {
       </div></div>`;
   },
 
+
+  reportSubmissionStatus(q) {
+    const report = this.data.reports[q] || {};
+    const bundleStatus = this.bundleStatus(q);
+    if (bundleStatus === 'accepted' || report.status === 'accepted') return 'accepted';
+    if (bundleStatus === 'submitted' || bundleStatus === 'resubmitted' || report.status === 'submitted' || report.status === 'under_review') return 'submitted';
+    if (report.id || this.reportLooksComplete(q)) return 'draft';
+    return 'not_started';
+  },
+
+  reportReadinessLabel(q) {
+    const st = this.reportSubmissionStatus(q);
+    if (st === 'accepted') return 'Submitted to City · Accepted by City';
+    if (st === 'submitted') return 'Submitted to City';
+    if (st === 'draft') return this.reportLooksComplete(q) ? 'Draft complete — not yet submitted' : 'Draft in progress';
+    return 'Not started';
+  },
+
+  reportSubmitReady(q) {
+    return !!this.data.reports[q] && this.reportLooksComplete(q);
+  },
+
+  reportVisualComplete(q) {
+    const st = this.reportSubmissionStatus(q);
+    // Show green check once officially submitted to the City.
+    // City acceptance is a separate review state.
+    return st === 'submitted' || st === 'accepted';
+  },
+
   readiness(q) {
     const r = this.data.reports[q];
     const roster = this.data.rosters[q];
     const exits = this.data.exits.filter(e => e.quarter === q);
     return [
-      { label:'Quarterly Program Report', ok: !!r && this.reportLooksComplete(q), started: !!r, detail: this.reportLooksComplete(q) ? 'Ready' : (r ? 'Missing required fields or validation issues' : 'Not started'), action:'quarterly' },
+      { label:'Quarterly Program Report', ok: this.reportVisualComplete(q), visualOk: this.reportVisualComplete(q), submitReady: this.reportSubmitReady(q), started: this.reportSubmissionStatus(q) !== 'not_started', detail: this.reportReadinessLabel(q), action:'quarterly' },
       { label:'Client Roster', ok: this.rosterLooksComplete(q), started: !!roster, detail: roster ? this.rosterMovementDetail(roster) : 'Not uploaded/entered', action:'roster' },
       { label:'Non-Permanent Exit Detail', ok: exits.length > 0 || this.data.bundles[q]?.no_exits === true || ['accepted'].includes(this.bundleStatus(q)), started: exits.length > 0, detail: exits.length ? `${exits.length} exit row(s)` : 'Enter exits or mark no exits', action:'exits' }
     ];
