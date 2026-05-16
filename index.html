@@ -2249,7 +2249,6 @@ const App = {
         <span><strong>Unduplicated Persons Served YTD:</strong> ${this.calcPersonsYtd(q)}</span>
         <span><strong>Reporting Period:</strong> ${this.quarters[q].period}</span>
         <span><strong>Status:</strong> ${this.escape(status)}</span>
-      </div></div><span style="font-size:10px;">${pct}%</span></td><td>${this.escape(this.goalStatus(g))}</td></tr>`;}).join('')}</tbody></table></div>
       <div class="print-section"><h2>Cover Page</h2><table class="print-table"><tr><th>Field</th><th>Value</th></tr>
         <tr><td>Agency</td><td>${this.escape(this.agencyName())}</td></tr><tr><td>Program</td><td>${this.escape(this.programName())}</td></tr><tr><td>Data Source</td><td>${this.escape(r.data_source_note || '')}</td></tr><tr><td>Signatory</td><td>${this.escape(r.signatory_name || '')} · ${this.formatDate(r.signatory_date)}</td></tr></table></div>
       <div class="print-section"><h2>Data Check Summary</h2><table class="print-table"><thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead><tbody>${this.dataChecks(q).map(c=>`<tr><td>${this.escape(c.label)}</td><td>${c.ok ? 'Clear' : 'Review Needed'}</td><td>${this.escape(c.detail)}</td></tr>`).join('')}</tbody></table></div>
