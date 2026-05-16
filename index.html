@@ -1891,9 +1891,26 @@ const App = {
   renderRosterForm() {
     const q = this.currentQuarter;
     const r = this.data.rosters[q] || {};
-    const ties = this.rosterMovementTies(r);
+    const m = this.programMovement(q);
+    const locked = this.quarterLocked(q);
+    const hasReportMovement = m.source !== 'roster';
+    const useProgramMovement = locked && hasReportMovement;
+
+    // For accepted historical quarters, display the operational movement
+    // calculated from the program report: prior-quarter active residents,
+    // current-quarter intakes, current-quarter exits, and current-quarter
+    // active residents. This avoids displaying YTD people served as if they
+    // were people physically in the 20-bed program.
+    const startVal = useProgramMovement ? m.start : (r.start_count ?? '');
+    const intakesVal = useProgramMovement ? m.intakes : (r.intakes_count ?? '');
+    const exitsVal = useProgramMovement ? m.exits : (r.exits_count ?? '');
+    const endVal = useProgramMovement ? m.end : (r.end_count ?? '');
+    const ties = useProgramMovement ? m.ties : this.rosterMovementTies({ start_count:startVal, intakes_count:intakesVal, exits_count:exitsVal, end_count:endVal });
+    const detail = useProgramMovement ? this.programMovementDetail(q) : this.rosterMovementDetail({ start_count:startVal, intakes_count:intakesVal, exits_count:exitsVal, end_count:endVal });
+
     document.getElementById('roster-meta').innerHTML = `${q} · ${this.quarters[q].period} · ${this.statusBadge(this.bundleStatus(q))}`;
-    document.getElementById('roster-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">📁</div><div><strong>Client Roster and Quarterly Program Movement</strong><br>Upload the roster backup file and summarize active program movement during the reporting period. This is separate from total people served YTD and should never exceed the 20-bed program capacity at quarter end.</div></div>
+    document.getElementById('roster-body').innerHTML = `<div class="notice navy"><div aria-hidden="true">📁</div><div><strong>Client Roster and Quarterly Program Movement</strong><br>Upload the roster backup file and summarize movement through the 20-bed program during the reporting period. This is separate from total people served YTD and should never exceed the 20-bed program capacity at quarter end.</div></div>
+      ${useProgramMovement ? `<div class="notice green"><div aria-hidden="true">✓</div><div><strong>Historical quarter movement calculated from accepted program report data.</strong><br>For accepted quarters, this screen displays operational movement based on active residents, intakes, and exits from the program report rather than editable roster summary fields.</div></div>` : ''}
       <div class="form-section"><div class="form-section-title">Upload Roster Backup</div>
         <label class="upload-zone"><input type="file" id="roster-file"><div style="font-size:30px;" aria-hidden="true">📁</div><div id="roster-file-label"><strong>Click to select roster file</strong><br><span class="field-hint">Accepted formats: Any file type, including Excel, CSV, PDF, Word, image, or ZIP.</span></div></label>
       </div>
@@ -1901,13 +1918,14 @@ const App = {
         <div class="form-row">${this.field('roster-start','Period Start',r.period_start || '','date',true)}${this.field('roster-end','Period End',r.period_end || '','date',true)}</div>
       </div>
       <div class="form-section"><div class="form-section-title">Quarterly Program Movement</div>
-        <div class="form-row">${this.field('roster-start-count','People in Program at Start of Quarter',r.start_count ?? '','number',true)}${this.field('roster-intakes-count','Intakes During Quarter',r.intakes_count ?? '','number',true)}</div>
-        <div class="form-row">${this.field('roster-exits-count','Exits During Quarter',r.exits_count ?? '','number',true)}${this.field('roster-end-count','People in Program at End of Quarter',r.end_count ?? '','number',true)}</div>
-        <div id="roster-reconcile" class="notice ${ties ? 'green' : 'amber'}" style="margin-top:10px;"><div aria-hidden="true">${ties ? '✅' : '⚠️'}</div><div><strong>${ties ? 'Roster movement ties out.' : 'Check roster movement.'}</strong><br><span>${this.escape(this.rosterMovementDetail(r))}</span></div></div>
-        <p class="field-hint">This movement summary reconciles the number of people physically in the 20-bed program at the start and end of the quarter. It is separate from unduplicated people served YTD.</p>
+        <div class="form-row">${this.field('roster-start-count','People Physically in Program at Start of Quarter',startVal,'number',true)}${this.field('roster-intakes-count','Intakes During Quarter',intakesVal,'number',true)}</div>
+        <div class="form-row">${this.field('roster-exits-count','Exits During Quarter',exitsVal,'number',true)}${this.field('roster-end-count','People Physically in Program at End of Quarter',endVal,'number',true)}</div>
+        <div id="roster-reconcile" class="notice ${ties ? 'green' : 'amber'}" style="margin-top:10px;"><div aria-hidden="true">${ties ? '✅' : '⚠️'}</div><div><strong>${ties ? 'Quarterly program movement ties out.' : 'Check quarterly program movement.'}</strong><br><span>${this.escape(detail)}</span></div></div>
+        <p class="field-hint">This movement summary reconciles the number of people physically in the 20-bed program at the start and end of the quarter. It is separate from total unduplicated people served YTD.</p>
       </div>
       <div class="form-section"><div class="form-section-title">Optional Notes</div><div class="field-group"><label class="field-label" for="roster-notes">Notes</label><textarea class="field-textarea" id="roster-notes" placeholder="Optional: describe roster source, export date, or reconciliation notes.">${this.escape(r.notes || '')}</textarea></div></div>
       <div class="form-section"><div class="form-section-title">Roster Records</div>${this.renderRosterPager()}</div>`;
+
     document.querySelectorAll('#modal-roster input, #modal-roster textarea').forEach(el => {
       el.addEventListener('input', () => { this.markDirty('roster'); this.updateRosterReconciliation(); });
       el.addEventListener('blur', () => { this.validateField(el); this.autosave('roster'); });
@@ -1926,15 +1944,28 @@ const App = {
   updateRosterReconciliation() {
     const box = document.getElementById('roster-reconcile');
     if (!box) return;
-    const r = {
-      start_count: this.numVal('roster-start-count'),
-      intakes_count: this.numVal('roster-intakes-count'),
-      exits_count: this.numVal('roster-exits-count'),
-      end_count: this.numVal('roster-end-count')
-    };
-    const ties = this.rosterMovementTies(r);
+    const q = this.currentQuarter;
+    const m = this.programMovement(q);
+    const locked = this.quarterLocked(q);
+    const useProgramMovement = locked && m.source !== 'roster';
+
+    let ties, detail;
+    if (useProgramMovement) {
+      ties = m.ties && m.crossQuarterTies;
+      detail = this.programMovementDetail(q);
+    } else {
+      const r = {
+        start_count: this.numVal('roster-start-count'),
+        intakes_count: this.numVal('roster-intakes-count'),
+        exits_count: this.numVal('roster-exits-count'),
+        end_count: this.numVal('roster-end-count')
+      };
+      ties = this.rosterMovementTies(r);
+      detail = this.rosterMovementDetail(r);
+    }
+
     box.className = `notice ${ties ? 'green' : 'amber'}`;
-    box.innerHTML = `<div aria-hidden="true">${ties ? '✅' : '⚠️'}</div><div><strong>${ties ? 'Roster movement ties out.' : 'Check roster movement.'}</strong><br><span>${this.escape(this.rosterMovementDetail(r))}</span></div>`;
+    box.innerHTML = `<div aria-hidden="true">${ties ? '✅' : '⚠️'}</div><div><strong>${ties ? 'Quarterly program movement ties out.' : 'Check quarterly program movement.'}</strong><br><span>${this.escape(detail)}</span></div>`;
   },
 
   renderRosterPager() {
@@ -2223,22 +2254,16 @@ const App = {
       s.activeResidents !== null && s.activeResidents !== undefined &&
       s.newIntakes !== null && s.newIntakes !== undefined;
 
-    let start, intakes, exits, end, source;
-
     if (hasReportMovement) {
-      end = Number(s.activeResidents || 0);
-      intakes = Number(s.newIntakes || 0);
-      exits = this.quarterExitTotal(q);
+      const end = Number(s.activeResidents || 0);
+      const intakes = Number(s.newIntakes || 0);
+      const exits = this.quarterExitTotal(q);
       const calculatedStart = Math.max(0, end - intakes + exits);
-
-      // For Q2-Q4, prior quarter end should be the strongest source for
-      // start-of-quarter occupancy. For Q1 or missing prior data, use the
-      // calculated movement value.
-      start = priorEnd !== null && !Number.isNaN(priorEnd) ? priorEnd : calculatedStart;
-      source = priorEnd !== null && !Number.isNaN(priorEnd) ? 'prior_quarter_end' : 'calculated_from_current_quarter';
+      const usePrior = priorQ && priorEnd !== null && !Number.isNaN(priorEnd);
+      const start = usePrior ? priorEnd : calculatedStart;
 
       return {
-        source,
+        source: usePrior ? 'prior_quarter_end' : 'calculated_from_current_quarter',
         priorQ,
         priorEnd,
         calculatedStart,
@@ -2253,11 +2278,10 @@ const App = {
       };
     }
 
-    start = Number(roster.start_count || 0);
-    intakes = Number(roster.intakes_count || 0);
-    exits = Number(roster.exits_count || 0);
-    end = Number(roster.end_count || 0);
-
+    const start = Number(roster.start_count || 0);
+    const intakes = Number(roster.intakes_count || 0);
+    const exits = Number(roster.exits_count || 0);
+    const end = Number(roster.end_count || 0);
     return {
       source: 'roster',
       priorQ,
