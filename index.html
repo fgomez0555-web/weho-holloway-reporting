@@ -29,7 +29,7 @@
   --radius: 6px; --radius-lg: 10px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--off-white); color: var(--gray-800); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F4F2EE; color: var(--gray-800); min-height: 100vh; font-size: 14px; line-height: 1.6; }
 button, input, select, textarea { font-family: 'Plus Jakarta Sans', sans-serif; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgba(201,162,74,.45); outline-offset: 2px; }
 
@@ -65,27 +65,31 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .deadline-chip.red { background: rgba(192,57,43,.24); color: #FFD0CA; }
 
 .app-shell { display:flex; min-height:calc(100vh - 58px); }
-.sidebar { width: 230px; background:var(--white); border-right:1px solid var(--border); padding: 24px 0; flex-shrink:0; position: sticky; top:58px; height:calc(100vh - 58px); overflow-y:auto; }
-.sidebar-label { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gray-400); padding:0 18px 8px; }
+.sidebar { width: 210px; background:var(--white); border-right:1px solid var(--border); padding: 24px 0; flex-shrink:0; position: sticky; top:58px; height:calc(100vh - 58px); overflow-y:auto; }
+.sidebar-label { font-size:10.5px; font-weight:600; letter-spacing:.04em; color:var(--gray-400); padding:0 16px 8px; }
 .sidebar-section { margin-bottom:22px; }
-.sidebar-item { display:flex; align-items:center; gap:9px; padding:9px 18px; font-size:13px; color:var(--gray-600); cursor:pointer; border-left:3px solid transparent; transition:.15s; }
+.sidebar-item { display:flex; align-items:center; gap:9px; padding:8px 12px; margin:0 8px; font-size:13px; color:var(--gray-600); cursor:pointer; border-radius:6px; border-left:none; transition:.15s; }
 .sidebar-item:hover { background:var(--gray-100); color:var(--navy); }
-.sidebar-item.active { background:#EEF2FA; color:var(--navy); font-weight:600; border-left-color:var(--navy); }
+.sidebar-item.active { background:#EEF2FA; color:var(--navy); font-weight:600; }
 .si-icon { font-size:15px; width:18px; text-align:center; }
 
 .main { flex:1; padding:28px 32px; max-width:1180px; }
 .page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border); }
 .page-title { font-family:'Cormorant Garamond', serif; font-size:32px; font-weight:600; color:var(--navy); line-height:1.15; letter-spacing:-.01em; }
 .page-subtitle { font-size:13px; color:var(--gray-400); margin-top:3px; }
-.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius); font-size:13px; font-weight:700; cursor:pointer; border:1px solid transparent; transition:.15s; }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; cursor:pointer; border:1px solid transparent; transition:all .15s; }
 .btn-primary { background:var(--navy); color:var(--white); border-color:var(--navy); }
+.btn-primary:hover:not(:disabled) { background:var(--navy-light); transform:scale(1.01); }
 .btn-gold { background:var(--gold); color:var(--navy); border-color:var(--gold); }
+.btn-gold:hover:not(:disabled) { background:var(--gold-light); transform:scale(1.01); }
 .btn-ghost { background:transparent; color:var(--navy); border-color:var(--border); }
+.btn-ghost:hover:not(:disabled) { background:var(--gray-100); border-color:var(--gray-400); transform:scale(1.01); }
 .btn-danger { background:var(--red); color:var(--white); border-color:var(--red); }
+.btn-danger:hover:not(:disabled) { opacity:.88; transform:scale(1.01); }
 .btn-sm { padding:5px 11px; font-size:12px; }
 .btn:disabled { opacity:.45; cursor:not-allowed; }
 
-.badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+.badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:500; letter-spacing:.01em; }
 .badge-green { background:var(--green-light); color:var(--green); }
 .badge-amber { background:var(--amber-light); color:var(--amber); }
 .badge-red { background:var(--red-light); color:var(--red); }
@@ -103,9 +107,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .card-title { font-family:'Cormorant Garamond', serif; font-size:20px; font-weight:600; color:var(--navy); }
 .card-body { padding:22px; }
 .kpi-row { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:20px; }
-.kpi-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; box-shadow:var(--shadow); border-top:3px solid var(--navy); }
-.kpi-card.gold { border-top-color:var(--gold); } .kpi-card.green { border-top-color:var(--green); } .kpi-card.amber { border-top-color:var(--amber); }
-.kpi-label { font-size:11px; color:var(--gray-400); font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.kpi-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; box-shadow:var(--shadow); border-left:3px solid var(--navy); }
+.kpi-card.gold { border-left-color:var(--gold); background:linear-gradient(135deg, #fffdf7 0%, var(--white) 60%); }
+.kpi-card.green { border-left-color:var(--green); background:linear-gradient(135deg, #f5fbf7 0%, var(--white) 60%); }
+.kpi-card.amber { border-left-color:var(--amber); background:linear-gradient(135deg, #fffbf2 0%, var(--white) 60%); }
+.kpi-label { font-size:11px; color:var(--gray-400); font-weight:600; letter-spacing:.03em; }
 .kpi-value { font-family:'Cormorant Garamond', serif; font-size:34px; font-weight:600; color:var(--navy); line-height:1.1; margin-top:5px; }
 .kpi-sub { font-size:11.5px; color:var(--gray-400); margin-top:3px; }
 
@@ -119,7 +125,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .q-btn.draft, .q-btn.incomplete { border-color:var(--amber); color:var(--amber); }
 
 .content-grid { display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:24px; }
-.section-label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:12px; }
+.section-label { font-size:11.5px; font-weight:600; letter-spacing:.03em; color:var(--gray-400); margin-bottom:12px; }
 .readiness-row, .submission-row { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; box-shadow:var(--shadow); margin-bottom:10px; }
 .readiness-left { display:flex; align-items:center; gap:12px; }
 .status-icon { font-size:18px; }
@@ -140,13 +146,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .form-modal-meta { font-size:12px; color:rgba(255,255,255,.62); margin-top:2px; }
 .form-close-btn { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:var(--white); width:32px; height:32px; border-radius:6px; cursor:pointer; }
 .form-gold-bar { height:3px; background:var(--gold); }
-.form-tabs { display:flex; background:var(--navy); border-bottom:3px solid var(--gold); }
-.form-tab { padding:13px 18px; font-size:13px; font-weight:800; color:rgba(255,255,255,.72); cursor:pointer; border:none; background:transparent; flex:1; text-align:center; }
-.form-tab.active { color:var(--navy); background:var(--gold); }
+.form-tabs { display:flex; background:var(--white); border-bottom:1px solid var(--border); }
+.form-tab { padding:12px 18px; font-size:13px; font-weight:600; color:var(--gray-600); cursor:pointer; border:none; background:transparent; flex:1; text-align:center; border-bottom:2px solid transparent; margin-bottom:-1px; transition:.15s; }
+.form-tab:hover { color:var(--navy); background:var(--gray-100); }
+.form-tab.active { color:var(--navy); background:transparent; border-bottom-color:var(--gold); font-weight:700; }
 .tab-panel { display:none; } .tab-panel.active { display:block; }
 .form-body { padding:26px; max-height:64vh; overflow-y:auto; }
 .form-section { margin-bottom:28px; }
-.form-section-title { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gray-200); }
+.form-section-title { font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--gray-600); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gray-200); }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
 .form-row.three { grid-template-columns:1fr 1fr 1fr; }
 .field-group { display:flex; flex-direction:column; gap:5px; }
@@ -839,13 +846,21 @@ const App = {
   },
 
   // v3 role helpers — keep in one place so UI gating is consistent.
+  // Checks BOTH access_type and role fields so a user with either set correctly passes.
   hasRole(...roles) {
-    const r = this.profile?.access_type || this.profile?.role;
-    return roles.includes(r);
+    const accessType = this.profile?.access_type;
+    const role = this.profile?.role;
+    return roles.includes(accessType) || roles.includes(role);
   },
   canEditQuarter() {
     // Editors, signers, admin (agency or city) can edit; viewers/reporters cannot.
-    return this.hasRole('agency_editor','agency_signer','agency_admin','city_admin');
+    // Falls back to allowing edit if the user has a program_id match but no explicit role
+    // (covers agency accounts created before access_type was required).
+    if (this.hasRole('agency_editor','agency_signer','agency_admin','city_admin')) return true;
+    // Fallback: authenticated agency user with a program association but no explicit access_type
+    const hasNoRole = !this.profile?.access_type && !this.profile?.role;
+    const isAgencyUser = !!this.profile?.program_id || !!this.profile?.organization;
+    return hasNoRole && isAgencyUser;
   },
   canSign() {
     return this.hasRole('agency_signer','agency_admin','city_admin');
