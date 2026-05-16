@@ -1264,7 +1264,7 @@ const App = {
       { ok: demo.qAge === persons && demo.qEth === persons && demo.qLang === persons, label:'Quarter demographic totals tie to Persons Served This Quarter', detail:`Age/Gender ${demo.qAge}, Ethnicity ${demo.qEth}, Language ${demo.qLang}, Persons ${persons}` },
       { ok: ageYtd === ytdPersons && ethYtd === ytdPersons && langYtd === ytdPersons, label:'YTD demographic totals tie to Persons Served YTD', detail:`Age/Gender ${ageYtd}, Ethnicity ${ethYtd}, Language ${langYtd}, YTD ${ytdPersons}` },
       { ok: bedOk, label:'Bed-night totals are valid', detail:`Occupied ${s.bedNightsOcc || 0} of ${s.bedNightsAvail || 0} available` },
-      { ok: !roster.id || this.rosterMovementTies(roster), label:'Roster movement reconciliation', detail: roster.id ? this.rosterMovementDetail(roster) : 'No roster movement summary entered yet' }
+      { ok: this.programMovement(q).ties && this.programMovement(q).crossQuarterTies, label:'Quarterly program movement reconciliation', detail: this.programMovementDetail(q) }
     ];
   },
 
