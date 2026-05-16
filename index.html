@@ -525,7 +525,7 @@ const CONFIG = {
   QUARTERS: {
     Q1: { period:'October 1 – December 31, 2025', due:'2026-01-15', label:'Q1' },
     Q2: { period:'January 1 – March 31, 2026',    due:'2026-04-15', label:'Q2' },
-    Q3: { period:'April 1 – June 30, 2026',       due:'2026-06-15', label:'Q3' },
+    Q3: { period:'April 1 – June 30, 2026',       due:'2026-07-15', label:'Q3' },
     Q4: { period:'July 1 – September 30, 2026',   due:'2026-10-15', label:'Q4' }
   },
 
@@ -592,7 +592,7 @@ const CONFIG = {
 
   ANNUAL_GOALS: [
     { key:'phExitsAnnual',      label:'Permanent Housing Exits',      desc:'Progress toward a 30% permanent housing exit benchmark for people served YTD.', target:null, unit:' exits' },
-    { key:'suppServicesAnnual', label:'Supportive Services Engagement', desc:'Quarterly count of participants engaged in supportive services.',                target:null, unit:' people' },
+    { key:'suppServicesAnnual', label:'Service Participation Rate', desc:'Percent of residents served during the quarter who participated in supportive services.', target:null, unit:'%' },
     { key:'incomeAnnual',       label:'Income / Benefits Stability',    desc:'Participants who increased or maintained income/benefits this quarter.',         target:null, unit:' people' },
     { key:'occupancyAnnual',    label:'Occupancy / Utilization',        desc:'Bed nights occupied compared with available bed nights YTD.',                    target:null, unit:' bed nights' },
     { key:'satisfactionAnnual', label:'Participant Satisfaction',       desc:'Satisfied survey responses compared with total survey responses.',               target:null, unit:' responses' }
@@ -1105,15 +1105,36 @@ const App = {
     </div>`;
   },
 
+  serviceParticipationRate(q) {
+    const s = this.reportScope(q);
+    const r = this.data.reports[q] || {};
+    const engaged = Number(s.suppServicesEngaged || 0);
+    // Use Residents Served During Quarter as the denominator. If that is not yet
+    // entered, fall back to Persons Served This Quarter so the card can still render.
+    const served = Number(s.residentsServed || r.persons_quarter || 0);
+    if (!served) return null;
+    return Math.round((engaged / served) * 100);
+  },
+
+  serviceParticipationDetail(q) {
+    const s = this.reportScope(q);
+    const r = this.data.reports[q] || {};
+    const engaged = Number(s.suppServicesEngaged || 0);
+    const served = Number(s.residentsServed || r.persons_quarter || 0);
+    if (!served) return `${engaged || 0} engaged · enter residents served`;
+    return `${engaged} of ${served} residents served`;
+  },
+
   renderKpis(q) {
     const r = this.data.reports[q] || {};
     const s = this.reportScope(q);
     const ytd = r.persons_ytd ?? this.calcPersonsYtd(q);
+    const serviceRate = this.serviceParticipationRate(q);
     return [
       ['Persons Served', ytd ?? '—', `${r.persons_quarter ?? '—'} this quarter`, 'gold'],
       ['Occupancy', this.percent(s.bedNightsOcc, s.bedNightsAvail), `${s.bedNightsOcc ?? '—'} / ${s.bedNightsAvail ?? '—'} bed nights`, 'green'],
       ['PH Exits YTD', this.calcScopeYtd(q, 'phExits') ?? 0, `${s.phExits ?? 0} this quarter`, 'navy'],
-      ['Bundle Status', this.escape((this.bundleStatus(q)||'incomplete').replaceAll('_',' ')), `Due ${this.formatDate(this.quarters[q].due)}`, 'amber']
+      ['Service Participation', serviceRate === null ? '—' : `${serviceRate}%`, this.serviceParticipationDetail(q), 'amber']
     ].map(k => `<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join('');
   },
 
@@ -1187,7 +1208,7 @@ const App = {
     const bedOcc = this.calcScopeYtd(q, 'bedNightsOcc') || 0;
     const dynamic = {
       phExitsAnnual:      { actual: this.calcScopeYtd(q,'phExits') || 0, target: phBenchmark },
-      suppServicesAnnual: { actual: Number(s.suppServicesEngaged || 0), target: Math.max(1, Number(s.residentsServed || s.activeResidents || 0)) },
+      suppServicesAnnual: { actual: this.serviceParticipationRate(q) ?? 0, target: 100 },
       incomeAnnual:       { actual: Number(s.incomeIncrease || 0) + Number(s.incomeMaintained || 0), target: Math.max(1, Number(s.residentsServed || s.activeResidents || 0)) },
       occupancyAnnual:    { actual: bedOcc, target: Math.max(1, bedAvail) },
       satisfactionAnnual: { actual: Number(s.satSatisfied || 0), target: Math.max(1, Number(s.satTotal || 0)) }
@@ -1221,7 +1242,7 @@ const App = {
             const pct = this.goalPercent(g);
             const status = this.goalStatus(g);
             const cls = pct >= 90 ? 'green' : pct >= 60 ? 'amber' : 'red';
-            return `<div class="goal-row"><div class="goal-meta"><div><div class="goal-name">${this.escape(g.name)}</div><div class="field-hint">${this.escape(g.desc)}</div></div><div style="text-align:right;"><strong>${this.escape(String(g.actual))}</strong> / ${this.escape(String(g.target))}<br><span class="badge ${status === 'On Track' ? 'badge-green' : status === 'In Progress' ? 'badge-amber' : 'badge-red'}">${status}</span></div></div><div class="goal-bar"><div class="goal-fill ${cls}" style="width:${pct}%"></div></div></div>`;
+            return `<div class="goal-row"><div class="goal-meta"><div><div class="goal-name">${this.escape(g.name)}</div><div class="field-hint">${this.escape(g.desc)}</div></div><div style="text-align:right;"><strong>${this.escape(String(g.actual))}${this.escape(g.suffix || '')}</strong> / ${this.escape(String(g.target))}${this.escape(g.suffix || '')}<br><span class="badge ${status === 'On Track' ? 'badge-green' : status === 'In Progress' ? 'badge-amber' : 'badge-red'}">${status}</span></div></div><div class="goal-bar"><div class="goal-fill ${cls}" style="width:${pct}%"></div></div></div>`;
           }).join('')}
         </div>
         <p class="field-hint" style="margin-top:10px;">Annual goals are shown for program monitoring and should be interpreted with care when counts are small or the contract year is still in progress.</p>
@@ -2185,6 +2206,7 @@ const App = {
     const b = this.data.bundles[q] || {};
     const status = (this.bundleStatus(q) || 'incomplete').replaceAll('_',' ');
     const occupancy = this.percent(s.bedNightsOcc, s.bedNightsAvail);
+    const serviceRate = this.serviceParticipationRate(q);
 
     const ageRowsBase = this.ageBands.map(age => {
       const row = r.demographics_age_gender?.[age] || {male:0,female:0,nb:0,unk:0};
@@ -2249,15 +2271,14 @@ const App = {
         <div class="print-kpi"><div class="label">New Intakes</div><div class="value">${s.newIntakes ?? 0}</div><div class="label">This quarter</div></div>
         <div class="print-kpi"><div class="label">Permanent Housing Exits</div><div class="value">${this.calcScopeYtd(q,'phExits')}</div><div class="label">Year-to-date</div></div>
         <div class="print-kpi"><div class="label">Average Occupancy</div><div class="value">${occupancy}</div><div class="label">Occupied bed nights</div></div>
-        <div class="print-kpi"><div class="label">Service Engagement</div><div class="value">${s.suppServicesEngaged ?? 0}</div><div class="label">Participants engaged</div></div>
+        <div class="print-kpi"><div class="label">Service Participation</div><div class="value">${serviceRate === null ? '—' : serviceRate + '%'}</div><div class="label">${this.escape(this.serviceParticipationDetail(q))}</div></div>
       </div>
       <div class="print-summary-strip">
         <span><strong>Unduplicated Persons Served YTD:</strong> ${this.calcPersonsYtd(q)}</span>
         <span><strong>Reporting Period:</strong> ${this.quarters[q].period}</span>
         <span><strong>Status:</strong> ${this.escape(status)}</span>
       </div>
-      <div class="print-section print-first"><h2>Annual Goals & Progress</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section summarizes progress toward annual program goals and key monitoring measures. Goals should be interpreted with care when counts are small or the contract year is still in progress.</p><table class="print-table print-progress-table"><thead><tr><th>Goal / Measure</th><th>YTD Actual</th><th>Annual Target / Benchmark</th><th>Progress</th><th>Status</th></tr></thead><tbody>${this.annualGoals(q).map(g=>{ const pct=this.goalPercent(g); return `<tr><td><strong>${this.escape(g.name)}</strong><br><span style="font-size:10px;color:#666;">${this.escape(g.desc)}</span></td><td>${this.escape(String(g.actual))}</td><td>${this.escape(String(g.target))}</td><td><div class="print-progress-bar"><div class="print-progress-fill" style="width:${pct}%"></div></div><span style="font-size:10px;">${pct}%</span></td><td>${this.escape(this.goalStatus(g))}</td></tr>`;}).join('')}</tbody></table></div>
-      <div class="print-section"><h2>Cover Page</h2><table class="print-table"><tr><th>Field</th><th>Value</th></tr>
+      <div class="print-section print-first"><h2>Cover Page</h2><table class="print-table"><tr><th>Field</th><th>Value</th></tr>
         <tr><td>Agency</td><td>${this.escape(this.agencyName())}</td></tr><tr><td>Program</td><td>${this.escape(this.programName())}</td></tr><tr><td>Data Source</td><td>${this.escape(r.data_source_note || '')}</td></tr><tr><td>Signatory</td><td>${this.escape(r.signatory_name || '')} · ${this.formatDate(r.signatory_date)}</td></tr></table></div>
       <div class="print-section"><h2>Data Check Summary</h2><table class="print-table"><thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead><tbody>${this.dataChecks(q).map(c=>`<tr><td>${this.escape(c.label)}</td><td>${c.ok ? 'Clear' : 'Review Needed'}</td><td>${this.escape(c.detail)}</td></tr>`).join('')}</tbody></table></div>
       <div class="print-section"><h2>Demographics</h2><h3>Age & Gender</h3><table class="print-table"><thead><tr><th>Age</th><th>Qtr Male</th><th>Qtr Female</th><th>Qtr NB/GNC</th><th>Qtr Unknown</th><th>Qtr Total</th><th>YTD Total</th></tr></thead><tbody>${ageRows}</tbody></table>
