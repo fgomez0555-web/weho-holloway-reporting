@@ -2168,6 +2168,92 @@ const App = {
     if (el) el.textContent = text;
   },
 
+
+  quarterExitTotal(q) {
+    const s = this.reportScope(q);
+    return Number(s.phExits || 0)
+      + Number(s.exitsTemp || 0)
+      + Number(s.exitsInstitutional || 0)
+      + Number(s.exitsHomeless || 0)
+      + Number(s.exitsUnknown || 0);
+  },
+
+  priorQuarter(q) {
+    const order = ['Q1','Q2','Q3','Q4'];
+    const idx = order.indexOf(q);
+    return idx > 0 ? order[idx - 1] : null;
+  },
+
+  programMovement(q) {
+    const s = this.reportScope(q);
+    const roster = this.data.rosters[q] || {};
+    const priorQ = this.priorQuarter(q);
+    const priorEnd = priorQ ? Number(this.reportScope(priorQ).activeResidents || 0) : null;
+
+    const hasReportMovement =
+      s.activeResidents !== null && s.activeResidents !== undefined &&
+      s.newIntakes !== null && s.newIntakes !== undefined;
+
+    let start, intakes, exits, end, source;
+
+    if (hasReportMovement) {
+      end = Number(s.activeResidents || 0);
+      intakes = Number(s.newIntakes || 0);
+      exits = this.quarterExitTotal(q);
+      const calculatedStart = Math.max(0, end - intakes + exits);
+
+      // For Q2-Q4, prior quarter end should be the strongest source for
+      // start-of-quarter occupancy. For Q1 or missing prior data, use the
+      // calculated movement value.
+      start = priorEnd !== null && !Number.isNaN(priorEnd) ? priorEnd : calculatedStart;
+      source = priorEnd !== null && !Number.isNaN(priorEnd) ? 'prior_quarter_end' : 'calculated_from_current_quarter';
+
+      return {
+        source,
+        priorQ,
+        priorEnd,
+        calculatedStart,
+        start,
+        intakes,
+        exits,
+        end,
+        ties: start + intakes - exits === end,
+        crossQuarterTies: priorQ ? priorEnd === start : true,
+        formula: `${start} + ${intakes} - ${exits} = ${end}`,
+        calculatedFormula: `${calculatedStart} + ${intakes} - ${exits} = ${end}`
+      };
+    }
+
+    start = Number(roster.start_count || 0);
+    intakes = Number(roster.intakes_count || 0);
+    exits = Number(roster.exits_count || 0);
+    end = Number(roster.end_count || 0);
+
+    return {
+      source: 'roster',
+      priorQ,
+      priorEnd,
+      calculatedStart: start,
+      start,
+      intakes,
+      exits,
+      end,
+      ties: start + intakes - exits === end,
+      crossQuarterTies: priorQ ? priorEnd === start : true,
+      formula: `${start} + ${intakes} - ${exits} = ${end}`,
+      calculatedFormula: `${start} + ${intakes} - ${exits} = ${end}`
+    };
+  },
+
+  programMovementDetail(q) {
+    const m = this.programMovement(q);
+    const base = m.ties ? `Movement ties out: ${m.formula}` : `Check movement: ${m.formula}`;
+    if (m.priorQ) {
+      return `${base}. Prior quarter end check: ${m.priorQ} ended with ${m.priorEnd}; ${q} starts with ${m.start}.`;
+    }
+    return base;
+  },
+
   printReport(q=this.currentQuarter) {
     const r = this.data.reports[q] || {};
     const s = this.reportScope(q);
@@ -2265,7 +2351,7 @@ const App = {
       <h3>Language</h3><table class="print-table"><thead><tr><th>Category</th><th>Qtr</th><th>YTD</th></tr></thead><tbody>${langRows}</tbody></table></div>
       <div class="print-section page-break"><h2>Scope of Services</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section summarizes quarterly performance measures reported for the Holloway Interim Housing Program. Cumulative fields are shown year-to-date for the contract year; snapshot fields are displayed for the selected quarter only.</p><table class="print-table"><thead><tr><th>Metric</th><th>This Quarter</th><th>YTD / Display</th></tr></thead><tbody>${scopeRows}</tbody></table></div>
       <div class="print-section"><h2>Narrative Summary</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">${this.wordCount(r.narrative_text || '')} words · Suggested length: approximately 500–700 words.</p><p>${this.escape(r.narrative_text || 'No narrative provided.')}</p></div>
-      <div class="print-section page-break"><h2>Quarterly Program Movement</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section describes movement through the 20-bed Holloway program during the selected quarter. It should reconcile as: People in Program at Start + Intakes During Quarter − Exits During Quarter = People in Program at End of Quarter.</p><table class="print-table"><thead><tr><th>Movement Measure</th><th>Count</th></tr></thead><tbody><tr><td>Roster Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>People in Program at Start of Quarter</td><td>${roster.start_count ?? ''}</td></tr><tr><td>Intakes During Quarter</td><td>${roster.intakes_count ?? ''}</td></tr><tr><td>Exits During Quarter</td><td>${roster.exits_count ?? ''}</td></tr><tr class="print-total-row"><td>People in Program at End of Quarter</td><td>${roster.end_count ?? ''}</td></tr><tr><td>Movement Reconciliation</td><td>${this.rosterMovementTies(roster) ? '✓ Movement ties out' : '⚠ Review movement totals'}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></tbody></table></div>
+      <div class="print-section page-break"><h2>Quarterly Program Movement</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section describes movement through the 20-bed Holloway program during the selected quarter. It reconciles people physically in the program, which is separate from the total unduplicated people served year-to-date. For Q2–Q4, the start-of-quarter count is checked against the prior quarter’s end-of-quarter active resident count.</p><table class="print-table"><thead><tr><th>Movement Measure</th><th>Count / Status</th></tr></thead><tbody><tr><td>Roster Period</td><td>${this.formatDate(roster.period_start)} – ${this.formatDate(roster.period_end)}</td></tr><tr><td>People in Program at Start of Quarter</td><td>${this.programMovement(q).start}</td></tr><tr><td>Intakes During Quarter</td><td>${this.programMovement(q).intakes}</td></tr><tr><td>Exits During Quarter</td><td>${this.programMovement(q).exits}</td></tr><tr class="print-total-row"><td>People in Program at End of Quarter</td><td>${this.programMovement(q).end}</td></tr><tr><td>Movement Reconciliation</td><td>${this.programMovement(q).ties ? '✓ Movement ties out' : '⚠ Review movement totals'} (${this.programMovement(q).formula})</td></tr><tr><td>Prior Quarter End Check</td><td>${this.programMovement(q).priorQ ? (this.programMovement(q).crossQuarterTies ? '✓ ' : '⚠ ') + this.programMovement(q).priorQ + ' ended with ' + this.programMovement(q).priorEnd + '; ' + q + ' starts with ' + this.programMovement(q).start + '.' : 'Not applicable for first quarter.'}</td></tr><tr><td>Notes</td><td>${this.escape(roster.notes || '')}</td></tr></tbody></table></div>
       <div class="print-section"><h2>YTD Program Activity Summary</h2><p style="font-size:11px;color:#555;margin-bottom:8px;">This section summarizes cumulative program reach and exits year-to-date. These figures are separate from the number of people physically in the 20-bed program at the end of the quarter.</p><table class="print-table"><thead><tr><th>Measure</th><th>YTD Count</th></tr></thead><tbody><tr><td>Total People Served YTD</td><td class="print-ytd-cell">${totalServedYtd}</td></tr><tr><td>Total Exits YTD</td><td class="print-ytd-cell">${totalExitsYtd}</td></tr><tr><td>Permanent Housing Exits</td><td>${phYtd}</td></tr><tr><td>Non-Permanent Exits</td><td>${nonPhYtd}</td></tr><tr><td>Active / Beds Occupied at End of Quarter</td><td>${bedsAtEnd}</td></tr></tbody></table></div>
       <div class="print-section page-break"><h2>Non-Permanent Exit Detail</h2><table class="print-table"><thead><tr><th>#</th><th>Type</th><th>Vol/Invol</th><th>Reason</th><th>Follow-up</th></tr></thead><tbody>${exits.map((e,i)=>`<tr><td>${i+1}</td><td>${this.escape(e.exit_type)}</td><td>${this.escape(e.voluntary_involuntary)}</td><td>${this.escape(e.reason_for_exit)}</td><td>${this.escape(e.staff_followup)}</td></tr>`).join('') || '<tr><td colspan="5">No exits recorded.</td></tr>'}</tbody></table></div>
       <div class="print-section"><h2>City Review</h2><p>${this.escape(b.city_review_notes || 'No City review notes.')}</p></div>
